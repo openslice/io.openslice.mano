@@ -1,0 +1,68 @@
+
+# For Spring Actuator /info endpoint
+info:
+    artifact: mano-client-service
+    name: mano-client-service
+    description: Spring mano-client-service
+    version: 1.0.0
+
+server:
+  port: 13011
+    
+
+logging:
+  level:
+    org.springframework.cloud.consul: INFO
+    org.apache.camel.zipkin: INFO
+    org.apache.camel.spring.cloud: INFO
+    org.apache.camel: INFO
+  file: logs/application-debug.log
+  pattern:
+    console: "%d %-5level %logger : %msg%n"
+    file: "%d %-5level [%thread] %logger : %msg%n"
+        
+# Camel Service Call
+camel:
+  cloud:
+    service-call.component: undertow
+  zipkin:
+    endpoint: http://localhost:9411/api/v2/spans
+    server-service-mappings.[*]: mano-client-service
+    client-service-mappings.[*]: mano-client-service
+    include-message-body-streams: false
+    
+    
+spring:
+  profiles: default
+  application:
+    name: mano-client-service
+  cloud:
+    consul:
+      enabled: true
+      host: http://localhost:8500
+      port: 8500
+      config:
+        enabled: true
+        prefix: config
+        defaultContext: openslice
+        data-key: osdata
+        profileSeparator: '::'
+        format: yaml
+      discovery:        
+        tags: openslice-microservice
+        enabled: true
+        instanceId: ${spring.application.name}:${vcap.application.instance_id:${spring.application.instance_id:${random.value}}}
+        healthCheckInterval: 120s
+      
+  activemq:
+    brokerUrl: tcp://localhost:61616
+    user: admin
+    password: admin
+    pool:
+      enabled: true
+      max-connections: 100
+      
+portaltitle: "openslice"
+maindomain: "http://localhost:13000"
+main_operations_product: "Openslice Operations"
+

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" output="target/classes" path="src/main/java">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="**" kind="src" output="target/classes" path="src/main/resources">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" output="target/test-classes" path="src/test/java">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry excluding="**" kind="src" output="target/test-classes" path="src/test/resources">
+		<attributes>
+			<attribute name="test" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="/io.openslice.sol005nbi.osm5"/>
+	<classpathentry kind="src" path="/io.openslice.portal.api"/>
+	<classpathentry kind="lib" path="C:/Users/Ioannis/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-hibernate5/2.9.9/jackson-datatype-hibernate5-2.9.9.jar" sourcepath="C:/Users/Ioannis/.m2/repository/com/fasterxml/jackson/datatype/jackson-datatype-hibernate5/2.9.9/jackson-datatype-hibernate5-2.9.9-sources.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="com.fasterxml.jackson.datatype"/>
+			<attribute name="maven.artifactId" value="jackson-datatype-hibernate5"/>
+			<attribute name="maven.version" value="2.9.9"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="C:/Users/Ioannis/.m2/repository/org/apache/camel/camel-api/3.0.0-RC3/camel-api-3.0.0-RC3.jar" sourcepath="C:/Users/Ioannis/.m2/repository/org/apache/camel/camel-api/3.0.0-RC3/camel-api-3.0.0-RC3-sources.jar">
+		<attributes>
+			<attribute name="maven.pomderived" value="true"/>
+			<attribute name="maven.groupId" value="org.apache.camel"/>
+			<attribute name="maven.artifactId" value="camel-api"/>
+			<attribute name="maven.version" value="3.0.0-RC3"/>
+			<attribute name="maven.scope" value="compile"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="output" path="target/classes"/>
+</classpath>
