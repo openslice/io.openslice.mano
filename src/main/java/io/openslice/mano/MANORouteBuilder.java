@@ -89,28 +89,28 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		.log("NSD Onboarding failed!");		
 
 		
-		from("seda:nsd.deploy?multipleConsumers=true")
-		.doTry()
-		.bean( aMANOController,"deployNSDToMANOProvider") //returns exception or nothing
-		.log("NS deployed handled").stop()
-		.doCatch(Exception.class)
-		.log("NS deployment failed!"+"${exception.message}").stop();		
-
-		from("seda:nsd.deployment.complete?multipleConsumers=true")
-		.doTry()
-		.bean( aMANOController,"terminateNSFromMANOProvider") //returns exception or nothing
-		.log("NS completed handled")
-		.doCatch(Exception.class)
-		.log("NS completion failed!").stop();
-
-		from("seda:nsd.deployment.delete?multipleConsumers=true")
-		.doTry()
-		.bean( aMANOController,"deleteNSFromMANOProvider") //returns exception or nothing
-		.log("NS deleted handled")
-		.doCatch(Exception.class)
-		.log("NS deletion failed!").stop();
+//		from("seda:nsd.deploy?multipleConsumers=true")
+//		.doTry()
+//		.bean( aMANOController,"deployNSDToMANOProvider") //returns exception or nothing
+//		.log("NS deployed handled").stop()
+//		.doCatch(Exception.class)
+//		.log("NS deployment failed!"+"${exception.message}").stop();		
+//
+//		from("seda:nsd.deployment.complete?multipleConsumers=true")
+//		.doTry()
+//		.bean( aMANOController,"terminateNSFromMANOProvider") //returns exception or nothing
+//		.log("NS completed handled")
+//		.doCatch(Exception.class)
+//		.log("NS completion failed!").stop();
+//
+//		from("seda:nsd.deployment.delete?multipleConsumers=true")
+//		.doTry()
+//		.bean( aMANOController,"deleteNSFromMANOProvider") //returns exception or nothing
+//		.log("NS deleted handled")
+//		.doCatch(Exception.class)
+//		.log("NS deletion failed!").stop();
 				
-		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1m&period=6000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
+		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=20000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
 		
 		
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 

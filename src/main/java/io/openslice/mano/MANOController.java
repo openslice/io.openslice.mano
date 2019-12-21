@@ -260,29 +260,29 @@ public class MANOController {
 //		// OSM4 END
 //	}
 
-	public void checkAndDeleteTerminatedOrFailedDeployments() {
-		logger.info("Check and Delete Terminated and Failed Deployments");
-		List<DeploymentDescriptor> DeploymentDescriptorsToDelete = aMANOClient.getDeploymentsToBeDeleted();
-		for (DeploymentDescriptor d : DeploymentDescriptorsToDelete) {
-			// Launch the deployment
-			logger.info("Send to bus control to delete: " + d.getId());
-			aMANOClient.deleteExperiment(d);
-		}
-	}
+//	public void checkAndDeleteTerminatedOrFailedDeployments() {
+//		logger.info("Check and Delete Terminated and Failed Deployments");
+//		List<DeploymentDescriptor> DeploymentDescriptorsToDelete = aMANOClient.getDeploymentsToBeDeleted();
+//		for (DeploymentDescriptor d : DeploymentDescriptorsToDelete) {
+//			// Launch the deployment
+//			logger.info("Send to bus control to delete: " + d.getId());
+//			aMANOClient.deleteExperiment(d);
+//		}
+//	}
 	
-	public void checkAndDeployExperimentToMANOProvider() {
-		logger.info("This will trigger the check and Deploy Experiments");
-		// Check the database for a new deployment in the next minutes
-		// If there is a deployment to be made and the status is Scheduled
-		List<DeploymentDescriptor> DeploymentDescriptorsToRun = aMANOClient.getDeploymentsToInstantiate();
-		// Foreach deployment found, start the instantiation
-		for (DeploymentDescriptor d : DeploymentDescriptorsToRun) {
-			// Launch the deployment
-			logger.info("Send to bus control to deploy: " + d.getId());
-			aMANOClient.deployExperiment(d);
-		}
-	}
-
+//	public void checkAndDeployExperimentToMANOProvider() {
+//		logger.info("This will trigger the check and Deploy Experiments");
+//		// Check the database for a new deployment in the next minutes
+//		// If there is a deployment to be made and the status is Scheduled
+//		List<DeploymentDescriptor> DeploymentDescriptorsToRun = aMANOClient.getDeploymentsToInstantiate();
+//		// Foreach deployment found, start the instantiation
+//		for (DeploymentDescriptor d : DeploymentDescriptorsToRun) {
+//			// Launch the deployment
+//			logger.info("Send to bus control to deploy: " + d.getId());
+//			aMANOClient.deployExperiment(d);
+//		}
+//	}
+//
 	public void checkAndTerminateExperimentToMANOProvider() {
 		logger.info("This will trigger the check and Terminate Deployments");
 		// Check the database for a deployment to be completed in the next minutes
@@ -293,6 +293,29 @@ public class MANOController {
 			logger.debug("Deployment with id" + deployment_descriptor_tmp.getName() + " with status " + deployment_descriptor_tmp.getStatus() +" is going to be terminated");
 			// Terminate the deployment
 			aMANOClient.completeExperiment(deployment_descriptor_tmp.getId() );
+		}
+	}
+
+	public void checkAndDeleteTerminatedOrFailedDeployments() {
+		logger.info("Check and Delete Terminated and Failed Deployments");
+		List<DeploymentDescriptor> DeploymentDescriptorsToDelete = aMANOClient.getDeploymentsToBeDeleted();
+		for (DeploymentDescriptor d : DeploymentDescriptorsToDelete) {
+			// Launch the deployment
+			logger.info("Send to bus control to delete: " + d.getId());
+			this.deleteNSFromMANOProvider(d.getId());
+		}
+	}
+
+	public void checkAndDeployExperimentToMANOProvider() {
+		logger.info("This will trigger the check and Deploy Experiments");
+		// Check the database for a new deployment in the next minutes
+		// If there is a deployment to be made and the status is Scheduled
+		List<DeploymentDescriptor> DeploymentDescriptorsToRun = aMANOClient.getDeploymentsToInstantiate();
+		// Foreach deployment found, start the instantiation
+		for (DeploymentDescriptor d : DeploymentDescriptorsToRun) {
+			// Launch the deployment
+			logger.info("Send to bus control to deploy: " + d.getId());
+			this.deployNSDToMANOProvider(d.getId());
 		}
 	}
 	
@@ -336,7 +359,8 @@ public class MANOController {
 							deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
 							//CentralLogger.log( CLevel.INFO, "Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus());
 							logger.info("NS not found in OSM. Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus());						
-							deployment_tmp.setFeedback("NS instance not present in OSM. Marking as FAILED_OSM_REMOVED");				
+							deployment_tmp.setFeedback("NS instance not present in OSM. Marking as FAILED_OSM_REMOVED");	
+							logger.info("Update DeploymentDescriptor Object in 363");							
 							DeploymentDescriptor deploymentdescriptor_final = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 							logger.info("NS status change is now "+deploymentdescriptor_final.getStatus());						
 							aMANOClient.deleteInstanceFailed(deploymentdescriptor_final);										
@@ -710,17 +734,19 @@ public class MANOController {
 //
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
+		logger.info("Starting deployNSDToMANOProvicer");
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
 		
 		//ExperimentMetadata expm = nsdService.getProductByIDEagerData( deploymentdescriptor.getExperimentFullDetails().getId() );
 		
 //		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + expm);		
 //		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + expm.getExperimentOnBoardDescriptors());
-		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor) ); 
-		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor).getObMANOprovider());
+//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor) ); 
+//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor).getObMANOprovider());
 		
 		// OSM5 - START
-		if ( getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
+		if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
 			OSM5Client osm5Client = null;
 			try {
@@ -757,6 +783,7 @@ public class MANOController {
 				//CentralLogger.log( CLevel.INFO, "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());
 				logger.info( "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());								
 				deploymentdescriptor.setFeedback(ns_instance_creation_entity.getBody().toString());
+				logger.info("Update DeploymentDescriptor Object in 785");
 				DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 						.updateDeploymentDescriptor(deploymentdescriptor);
 				aMANOClient.deploymentInstantiationFailed(deploymentdescriptor_final);
@@ -808,6 +835,7 @@ public class MANOController {
 	}
 
 	public void terminateNSFromMANOProvider(long deploymentdescriptorid) {
+		logger.info("Starting terminateNSFromMANOProvicer");		
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
 		
 		
@@ -819,10 +847,11 @@ public class MANOController {
 			{
 				try
 				{
+					MANOprovider tmpMANOProvider = getExperimOBD(deploymentdescriptor).getObMANOprovider();
 					OSM5Client osm5Client = new OSM5Client(
-							getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
-							getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
-							getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+							tmpMANOProvider.getApiEndpoint(),
+							tmpMANOProvider.getUsername(),
+							tmpMANOProvider.getPassword(),
 							"admin");
 					
 					//MANOStatus.setOsm5CommunicationStatusActive(null);				
@@ -844,7 +873,8 @@ public class MANOController {
 								//CentralLogger.log( CLevel.ERROR, "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());
 								logger.info( "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());								
 								deploymentdescriptor.setFeedback(response.getBody().toString());				
-								logger.error("Termination of NS instance " + deploymentdescriptor.getInstanceId() + " failed");				
+								logger.error("Termination of NS instance " + deploymentdescriptor.getInstanceId() + " failed");	
+								logger.info("Update DeploymentDescriptor Object in 877");								
 								DeploymentDescriptor deploymentdescriptor_final = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
 								logger.info("NS status change is now "+deploymentdescriptor_final.getStatus());																			
 								aMANOClient.terminateInstanceFailed(deploymentdescriptor_final );				
@@ -938,6 +968,7 @@ public class MANOController {
 				logger.info( "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());				
 				deploymentdescriptor.setFeedback(deletion_response.getBody().toString());				
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
+				logger.info("Update DeploymentDescriptor Object in 969");				
 				DeploymentDescriptor deploymentdescriptor_final = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
 				logger.info("NS status change is now "+deploymentdescriptor_final.getStatus());															
 				aMANOClient.deleteInstanceFailed(deploymentdescriptor_final );				
