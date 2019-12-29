@@ -288,11 +288,12 @@ public class MANOController {
 		// Check the database for a deployment to be completed in the next minutes
 		// If there is a deployment to be made and the status is Scheduled
 		List<DeploymentDescriptor> DeploymentDescriptorsToComplete = aMANOClient.getDeploymentsToBeCompleted();
-		// Foreach deployment
+		// For each deployment
 		for (DeploymentDescriptor deployment_descriptor_tmp : DeploymentDescriptorsToComplete) {
 			logger.debug("Deployment with id" + deployment_descriptor_tmp.getName() + " with status " + deployment_descriptor_tmp.getStatus() +" is going to be terminated");
+			
 			// Terminate the deployment
-			aMANOClient.completeExperiment(deployment_descriptor_tmp.getId() );
+			this.terminateNSFromMANOProvider(deployment_descriptor_tmp.getId() );
 		}
 	}
 
@@ -332,9 +333,11 @@ public class MANOController {
 			// For each deployment get the status info and the IPs
 			for (int i = 0; i < runningDeploymentDescriptors.size(); i++) {
 				DeploymentDescriptor deployment_tmp = aMANOClient.getDeploymentByIdEager(runningDeploymentDescriptors.get(i).getId());
+				deployment_tmp.getExperimentFullDetails();
 				try {
-					// Get the MANO Provider for each deployment				
-					MANOprovider sm = aMANOClient.getMANOproviderByID( getExperimOBD( deployment_tmp ).getObMANOprovider().getId() );
+					// Get the MANO Provider for each deployment			
+					long tmp_MANOprovider_id = getExperimOBD( deployment_tmp ).getObMANOprovider().getId();
+					MANOprovider sm = aMANOClient.getMANOproviderByID( tmp_MANOprovider_id );
 					
 					//OSM5 - START
 					if (sm.getSupportedMANOplatform().getName().equals("OSM FIVE")) {
@@ -352,7 +355,7 @@ public class MANOController {
 								return;
 							}
 						}
-						JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(runningDeploymentDescriptors.get(i).getInstanceId());
+						JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(deployment_tmp.getInstanceId());
 						// If the no nsd with the specific id is found, mark the instance as faile to delete.
 						if(ns_instance_info == null)
 						{
@@ -735,15 +738,7 @@ public class MANOController {
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
 		logger.info("Starting deployNSDToMANOProvicer");
-		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
-		
-		//ExperimentMetadata expm = nsdService.getProductByIDEagerData( deploymentdescriptor.getExperimentFullDetails().getId() );
-		
-//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + expm);		
-//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + expm.getExperimentOnBoardDescriptors());
-//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor) ); 
-//		logger.info("deploymentdescriptor.getExperimentFullDetails() = " + getExperimOBD(deploymentdescriptor).getObMANOprovider());
-		
+		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);		
 		// OSM5 - START
 		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
 		if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
@@ -826,7 +821,7 @@ public class MANOController {
 					// Save the changes to DeploymentDescriptor
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 							.updateDeploymentDescriptor(deploymentdescriptor);
-					aMANOClient.deploymentInstantiationSucceded(deploymentdescriptor_final );
+					//aMANOClient.deploymentInstantiationSucceded(deploymentdescriptor_final );
 				}
 			}
 		}

@@ -26,6 +26,7 @@ import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
+import org.apache.camel.model.dataformat.JsonLibrary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -88,7 +89,8 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		.doCatch(Exception.class)
 //		.log("NSD Onboarding failed!");		
 
-		
+//**********************************************************************************************
+// 		THESE NOW ARE CALLED DIRECTLY AND ARE NOT REQUIRED ANY MORE 26122019
 //		from("seda:nsd.deploy?multipleConsumers=true")
 //		.doTry()
 //		.bean( aMANOController,"deployNSDToMANOProvider") //returns exception or nothing
@@ -109,29 +111,34 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		.log("NS deleted handled")
 //		.doCatch(Exception.class)
 //		.log("NS deletion failed!").stop();
-				
+//		**********************************************************************************************
+		
 		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=20000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
 		
-		
+		// THESE SEND THE DeploymentDescriptor Object to Bugzilla for status updates		
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 
 		// in order to create the marshalling
 		from("seda:nsd.deployment.instantiation.success?multipleConsumers=true")
-		.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.instantiation.success" );
 
 		from("seda:nsd.deployment.instantiation.fail?multipleConsumers=true")
-		.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.instantiation.fail" );		
 
 		from("seda:nsd.deployment.termination.success?multipleConsumers=true")
-		.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.termination.success" );				
 
 		from("seda:nsd.deployment.termination.fail?multipleConsumers=true")
-		.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
+		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.termination.fail" );		
 	}

@@ -155,6 +155,21 @@ public class MANOClient {
 		return DeploymentDescriptorsToDelete;	
 	}
 	
+	/**
+	 * @param d
+	 * @return as json
+	 * @throws JsonProcessingException
+	 */
+	public String getDeploymentEagerDataJson( DeploymentDescriptor d ) throws JsonProcessingException {
+
+		DeploymentDescriptor dd = this.getDeploymentByIdEager( d.getId() );
+		ObjectMapper mapper = new ObjectMapper();
+        mapper.registerModule(new Hibernate5Module()); 
+		String res = mapper.writeValueAsString(dd);
+		
+		return res;
+	}	
+		
 	// Get the data from the portal api (database)
 	public DeploymentDescriptor getDeploymentByIdEager(long Id)
 	{
@@ -202,26 +217,11 @@ public class MANOClient {
 		} catch (IOException e11) {
 			// TODO Auto-generated catch block
 			e11.printStackTrace();
+			logger.error(e11.getMessage());
+			System.out.println(e11.getMessage());
 		}
 		return em;	
 	}
-
-	/**
-	 * @param d
-	 * @return as json
-	 * @throws JsonProcessingException
-	 */
-	public String getDeploymentEagerDataJson( DeploymentDescriptor d ) throws JsonProcessingException {
-
-		DeploymentDescriptor dd = this.getDeploymentByIdEager( d.getId() );
-		ObjectMapper mapper = new ObjectMapper();
-        //Registering Hibernate4Module to support lazy objects
-		// this will fetch all lazy objects of VxF before marshaling
-        mapper.registerModule(new Hibernate5Module()); 
-		String res = mapper.writeValueAsString( dd );
-		
-		return res;
-	}	
 	
 	// Update the data in the portal api (database)
 	public DeploymentDescriptor updateDeploymentDescriptor(DeploymentDescriptor dd2send)
@@ -296,12 +296,6 @@ public class MANOClient {
 //		FluentProducerTemplate	template = contxt.createFluentProducerTemplate().to("seda:nsd.deploy?multipleConsumers=true");
 //		template.withBody( deploymentdescriptor ).asyncSend();	
 //	}
-
-	public void completeExperiment(long deploymentdescriptorid) {
-		logger.info( "completeExperiment: to(\"seda:nsd.complete?multipleConsumers=true\")");		
-		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.deployment.complete?multipleConsumers=true");
-		template.withBody( deploymentdescriptorid ).asyncSend();				
-	}
 
 	public void deleteExperiment(DeploymentDescriptor deploymentdescriptorid) {
 		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.deployment.delete?multipleConsumers=true");
