@@ -9,7 +9,7 @@
 
 	<artifactId>io.openslice.manoclient</artifactId>
 
-	<name>io.openslice.bugzilla</name>
+	<name>io.openslice.manoclient</name>
 	<url>http://maven.apache.org</url>
 
 	<properties>
