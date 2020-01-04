@@ -111,178 +111,385 @@ public class MANOController {
 ////	}
 //
 //	
+	/**
+	 * onBoard a VNF to MANO Provider, as described by this descriptor
+	 * 
+	 * @param vxfobds
+	 * @throws Exception
+	 */
+	public void onBoardVxFToMANOProvider( VxFOnBoardedDescriptor vxfobd ) throws Exception {
+		
+		vxfobd.setVxf(aMANOClient.getVxFById(vxfobd.getVxfid()));		
+		// Update the status and update the vxfobd
+		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
+		// This is the Deployment ID for the portal
+		vxfobd.setDeployId(UUID.randomUUID().toString());
+		//CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus());
+		logger.info("Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus());
+		// Set MANO Provider VxF ID
+		vxfobd.setVxfMANOProviderID( vxfobd.getVxf().getName());
+		// Set onBoarding Date
+		vxfobd.setLastOnboarding(new Date());
+
+		VxFOnBoardedDescriptor vxfobds = aMANOClient.updateVxFOnBoardedDescriptor(vxfobd);
+		if (vxfobds == null) {
+			throw new Exception("Cannot load VxFOnBoardedDescriptor");
+		}
+		vxfobds.setVxf(aMANOClient.getVxFById(vxfobds.getVxfid()));					
+		
+		// OSM5 START
+		if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+			OSM5Client osm5Client = null;
+			try {
+				osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
+				//MANOStatus.setOsm5CommunicationStatusActive(null);													
+			}
+		    catch(Exception e) 
+			{
+				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");				
+				//CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
+				
+				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding action.");																	
+				// Set the reason of the failure
+				vxfobds.setFeedbackMessage("OSM5 communication failed. Aborting VxF OnBoarding action.");
+				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+				//CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());
+				logger.error("Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());
+				
+				// ?? This should change. Either by an activemq call or we should certify upon Onboarding success.
+				// Uncertify if it failed OnBoarding.
+				vxfobds.getVxf().setCertified(false);
+				VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+				
+				//Send a message for OnBoarding Failure due to osm connection failure
+				aMANOClient.onBoardVxFFailed( vxfobds_final );				
+		        return ;
+			}						
+			
+			ResponseEntity<String> response = null;
+			response = osm5Client.createVNFDPackage();
+			if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
+				logger.error("VNFD Package Creation failed.");
+				// Set status
+				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+				//CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());										
+				// Set the reason of the failure
+				vxfobds.setFeedbackMessage(response.getBody().toString());
+				// Uncertify if it failed OnBoarding.
+				vxfobds.getVxf().setCertified(false);
+				VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+				//Send a message for OnBoarding Failure due to osm connection failure
+				aMANOClient.onBoardVxFFailed( vxfobds_final );
+				return;				
+			}
+			else
+			{
+				JSONObject obj = new JSONObject(response.getBody());
+				String vnfd_id = obj.getString("id");
+				logger.info(response.getStatusCode()+" replied. The new VNFD Package id is :" + vnfd_id);
+				String pLocation = vxfobd.getVxf().getPackageLocation();
+				logger.info("Package location to onboard is :" + pLocation);
+				response = osm5Client.uploadVNFDPackageContent(vnfd_id, pLocation);
+				if (response == null || response.getStatusCode().is4xxClientError()
+						|| response.getStatusCode().is5xxServerError()) {
+					logger.error("Upload of VNFD Package Content failed. Deleting VNFD Package.");
+					// Delete the package from the OSM
+					osm5Client.deleteVNFDPackage(vnfd_id);
+					// Set status
+					vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+					//CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());											
+					// Set the reason of the failure
+					vxfobds.setFeedbackMessage(response.getBody().toString());
+					// Uncertify if it failed OnBoarding.
+					vxfobds.getVxf().setCertified(false);
+					VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+					aMANOClient.onBoardVxFFailed( vxfobds_final );
+					return;
+				}
+
+				vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+				//CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());											
+				
+				vxfobds.setFeedbackMessage("OnBoarding Succeeded");
+				
+				// We select by design not to Certify upon OnBoarding but only on final version is determined.
+				// vxfobds.getVxf().setCertified(true);
+				
+				// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
+				vxfobds.setDeployId(vnfd_id);
+				// What should be the vxf Name. Something like cirros_vnfd.
+				vxfobds.setVxfMANOProviderID( vxfobd.getVxf().getName() );
+				// Set Onboarding date
+				vxfobds.setLastOnboarding(new Date());
+				// Save the changes to vxfobds
+				VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+				aMANOClient.onBoardVxFSucceded( vxfobds_final );
+				
+			}			
+		}		
+		// OSM5 END
+	}
+
+	/**
+	 * offBoard a VNF to MANO Provider, as described by this descriptor
+	 * 
+	 * @param c
+	 */
+	public ResponseEntity<String> offBoardVxFFromMANOProvider(VxFOnBoardedDescriptor obd)
+			throws HttpClientErrorException {
+		// TODO Auto-generated method stub
+		ResponseEntity<String> response = null;
+		// OSM5 START
+		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+			String vnfd_id = obd.getDeployId();
+			OSM5Client osm5Client = null;			
+			try {
+				osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
+				//MANOStatus.setOsm5CommunicationStatusActive(null);								
+			}
+		    catch(HttpStatusCodeException e) 
+			{
+				logger.error("offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting action.");
+				//CentralLogger.log( CLevel.ERROR, "offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting VxF offboarding action.");
+				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF offboarding action.");								
+		        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
+		                .body(e.getResponseBodyAsString());
+			}						
+			
+			response = osm5Client.deleteVNFDPackage(vnfd_id);
+		}
+		// OSM5 END
+		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM TWO")) {
+			response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
+		}
+		return response;
+	}
+	
+//	public void onBoardNSDToMANOProvider( long uexpobdid ) throws Exception {
+//	ExperimentOnBoardDescriptor uexpobd = nsdOBDService.getExperimentOnBoardDescriptorByID(uexpobdid);
+//	
+//	if (uexpobd == null) {
+//		throw new Exception("uexpobd is NULL. Cannot load VxFOnBoardedDescriptor");
+//	}
+//	
+//	
+//	uexpobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
+//	CentralLogger.log( CLevel.INFO, "Onboarding status change of Experiment "+uexpobd.getExperiment().getName()+" to "+uexpobd.getOnBoardingStatus());													
+//	// This is the Deployment ID for the portal
+//	uexpobd.setDeployId(UUID.randomUUID().toString());
+//	ExperimentMetadata em = uexpobd.getExperiment();
+//	if (em == null) {
+//		em = (ExperimentMetadata) nsdService.getProductByID(uexpobd.getExperimentid());
+//	}
+//
 //	/**
-//	 * onBoard a VNF to MANO Provider, as described by this descriptor
+//	 * The following is not OK. When we submit to OSMClient the createOnBoardPackage
+//	 * we just get a response something like response = {"output":
+//	 * {"transaction-id": "b2718ef9-4391-4a9e-97ad-826593d5d332"}} which does not
+//	 * provide any information. The OSM RIFTIO API says that we could get
+//	 * information about onboarding (create or update) jobs see
+//	 * https://open.riftio.com/documentation/riftware/4.4/a/api/orchestration/pkt-mgmt/rw-pkg-mgmt-download-jobs.htm
+//	 * with /api/operational/download-jobs, but this does not return pending jobs.
+//	 * So the only solution is to ask again OSM if something is installed or not, so
+//	 * for now the client (the portal ) must check via the
+//	 * getVxFOnBoardedDescriptorByIdCheckMANOProvider giving the VNF ID in OSM. OSM
+//	 * uses the ID of the yaml description Thus we asume that the vxf name can be
+//	 * equal to the VNF ID in the portal, and we use it for now as the OSM ID. Later
+//	 * in future, either OSM API provide more usefull response or we extract info
+//	 * from the VNFD package
 //	 * 
-//	 * @param vxfobds
-//	 * @throws Exception
 //	 */
-//	public void onBoardVxFToMANOProvider( long vxfobdid ) throws Exception {
 //
-//		if (vxfOBDService == null) {
-//			throw new Exception("vxfOBDService is NULL. Cannot load VxFOnBoardedDescriptor");
+//	uexpobd.setVxfMANOProviderID(em.getName()); // Possible Error. This probably needs to be
+//												// setExperimentMANOProviderID(em.getName())
+//
+//	uexpobd.setLastOnboarding(new Date());
+//
+//	ExperimentOnBoardDescriptor uexpobds = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobd);
+//	if (uexpobds == null) {
+//		throw new Exception("Cannot load NSDOnBoardedDescriptor");
+//	}
+//
+//	String pLocation = em.getPackageLocation();
+//	logger.info("NSD Package Location: " + pLocation);
+//	if (!pLocation.contains("http")) {
+//		pLocation = propsService.getPropertyByName( "maindomain" ).getValue() + pLocation;
+//	}
+////	if (!pLocation.contains("http")) {
+////		pLocation = "http:" + pLocation;
+////		pLocation = pLocation.replace("\\", "/");
+////	}				
+//
+//
+//	
+//	// OSM5 - START
+//	if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+//		ResponseEntity<String> response = null;
+//		OSM5Client osm5Client = null;
+//		try {
+//			osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+//			MANOStatus.setOsm5CommunicationStatusActive(null);								
 //		}
+//	    catch(Exception e) 
+//		{
+//			logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
+//			CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting NSD Onboarding action.");
+//			MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD Onboarding action.");				
+//			// Set the reason of the failure
+//			uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
+//			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+//			CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																	
+//			// Set Valid to false if it fails OnBoarding
+//			uexpobds.getExperiment().setValid(false);
+//			ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
+//			BusController.getInstance().onBoardNSDFailed( uexpobds );
+//			return ;
+//		}						
 //		
-//		VxFOnBoardedDescriptor vxfobd = vxfOBDService.getVxFOnBoardedDescriptorByID(vxfobdid);
-//		// PortalRepository portalRepositoryRef = new PortalRepository();
-//
-//		if (vxfobd == null) {
-//			throw new Exception("vxfobd is NULL. Cannot load VxFOnBoardedDescriptor");
+//		response = osm5Client.createNSDPackage();
+//		if (response == null || response.getStatusCode().is4xxClientError()
+//				|| response.getStatusCode().is5xxServerError()) {
+//			logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
+//			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+//			CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																	
+//			// Set the reason of the failure
+//			uexpobds.setFeedbackMessage(response.getBody().toString());
+//			// Set Valid to false if it fails OnBoarding
+//			uexpobds.getExperiment().setValid(false);
+//			ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
+//			BusController.getInstance().onBoardNSDFailed( uexpobds );
+//			return;				
 //		}
-//		
-//		if (vxfobd.getVxf() == null) {
-//			throw new Exception("vxfobd.getVxf() is NULL. Cannot load VxFOnBoardedDescriptor");
-//		}
-//		
-//		if (vxfobd.getVxf().getName() == null) {
-//			throw new Exception("vxfobd.getVxf() is NULL. Cannot load VxFOnBoardedDescriptor");
-//		}
-//		
-//		
-//		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
-//		// This is the Deployment ID for the portal
-//		vxfobd.setDeployId(UUID.randomUUID().toString());
-////		VxFMetadata vxf = vxfobd.getVxf();
-////		if (vxf == null) {
-////			vxf = (VxFMetadata) vxfService.getProductByID(vxfobd.getVxfid());
-////		}
-//		CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus());						
-//		// Set MANO Provider VxF ID
-//		vxfobd.setVxfMANOProviderID( vxfobd.getVxf().getName());
-//		// Set onBoarding Date
-//		vxfobd.setLastOnboarding(new Date());
-//
-//		VxFOnBoardedDescriptor vxfobds = vxfOBDService.updateVxFOnBoardedDescriptor(vxfobd);
-//		if (vxfobds == null) {
-//			throw new Exception("Cannot load VxFOnBoardedDescriptor");
-//		}
-//
-//
-//		String pLocation = vxfobd.getVxf().getPackageLocation();
-//		logger.info("VxF Package Location: " + pLocation);
-//
-//		if (!pLocation.contains("http")) {
-//			pLocation = propsService.getPropertyByName( "maindomain" ).getValue() + pLocation;
-//		}
-////		if (!pLocation.contains("http")) {
-////			pLocation = "http:" + pLocation;
-////			pLocation = pLocation.replace("\\", "/");
-////		}					
-//		logger.info("PROPER VxF Package Location: " + pLocation);
-//
-//		
-//		// OSM5 START
-//		if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-//			OSM5Client osm5Client = null;
-//			try {
-//				osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
-//				MANOStatus.setOsm5CommunicationStatusActive(null);													
-//			}
-//		    catch(Exception e) 
-//			{
-//				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				
-//				CentralLogger.log( CLevel.INFO, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding action.");																	
-//				// Set the reason of the failure
-//				vxfobds.setFeedbackMessage("OSM5 communication failed. Aborting VxF OnBoarding action.");
-//				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());										
-//				// Uncertify if it failed OnBoarding.
-//				vxfobds.getVxf().setCertified(false);
-//				VxFOnBoardedDescriptor vxfobds_final = vxfOBDService.updateVxFOnBoardedDescriptor(vxfobds);
-//				
-//				// Uncertify if it failed OnBoarding.
-//				BusController.getInstance().onBoardVxFFailed( vxfobds_final );				
-//		        return ;
-//			}						
-//			
-//			ResponseEntity<String> response = null;
-//			response = osm5Client.createVNFDPackage();
-//			if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
-//				logger.error("VNFD Package Creation failed.");
-//				// Set status
-//				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());										
-//				// Set the reason of the failure
-//				vxfobds.setFeedbackMessage(response.getBody().toString());
-//				// Uncertify if it failed OnBoarding.
-//				vxfobds.getVxf().setCertified(false);
-//				VxFOnBoardedDescriptor vxfobds_final = vxfOBDService.updateVxFOnBoardedDescriptor(vxfobds);
-//				BusController.getInstance().onBoardVxFFailed( vxfobds_final );
-//				return;				
+//		else
+//		{
+//			JSONObject obj = new JSONObject(response.getBody());
+//			String nsd_id = obj.getString("id");
+//			logger.info(response.getStatusCode()+" replied. The new NSD Package id is :" + nsd_id);
+//			logger.error("Uploading NSD Archive from URL " + pLocation);
+//			logger.error("************************");
+//			response = osm5Client.uploadNSDPackageContent(nsd_id, pLocation);
+//			if (response == null || response.getStatusCode().is4xxClientError()
+//					|| response.getStatusCode().is5xxServerError()) {
+//				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
+//				osm5Client.deleteNSDPackage(nsd_id);
+//				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+//				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																						
+//				uexpobds.setFeedbackMessage(response.getBody().toString());
+//				// Set Valid to false if it fails OnBoarding
+//				uexpobds.getExperiment().setValid(false);
+//				ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
+//				BusController.getInstance().onBoardNSDFailed( uexpobds );
+//				return;
 //			}
 //			else
 //			{
-//				JSONObject obj = new JSONObject(response.getBody());
-//				String vnfd_id = obj.getString("id");
-//				logger.info(response.getStatusCode()+" replied. The new VNFD Package id is :" + vnfd_id);
-//				
-//				response = osm5Client.uploadVNFDPackageContent(vnfd_id, pLocation);
-//				if (response == null || response.getStatusCode().is4xxClientError()
-//						|| response.getStatusCode().is5xxServerError()) {
-//					logger.error("Upload of VNFD Package Content failed. Deleting VNFD Package.");
-//					// Delete the package from the OSM
-//					osm5Client.deleteVNFDPackage(vnfd_id);
-//					// Set status
-//					vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//					CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());											
-//					// Set the reason of the failure
-//					vxfobds.setFeedbackMessage(response.getBody().toString());
-//					// Uncertify if it failed OnBoarding.
-//					vxfobds.getVxf().setCertified(false);
-//					VxFOnBoardedDescriptor vxfobds_final = vxfOBDService.updateVxFOnBoardedDescriptor(vxfobds);
-//					BusController.getInstance().onBoardVxFFailed( vxfobds_final );
-//					return;
-//				}
-//
-//				vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-//				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());											
-//				
-//				vxfobds.setFeedbackMessage("OnBoarding Succeeded");
-//				// We select by design not to Certify upon OnBoarding but only on final version
-//				// is determined.
-//				// vxfobds.getVxf().setCertified(true);
+//				uexpobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+//				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																						
+//				uexpobds.setFeedbackMessage("NSD Onboarded Successfully");
 //				// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
-//				vxfobds.setDeployId(vnfd_id);
-//				// What should be the vxf Name. Something like cirros_vnfd.
-//				vxfobds.setVxfMANOProviderID( vxfobd.getVxf().getName() );
+//				uexpobds.setDeployId(nsd_id);
+//				// What should be the NSD Name. Something like cirros_nsd.
+//				uexpobds.setExperimentMANOProviderID(em.getName());
 //				// Set Onboarding date
-//				vxfobds.setLastOnboarding(new Date());
+//				uexpobds.setLastOnboarding(new Date());
+//				// We decide to set valid when we have the final version. Thus we comment this.
+//				// uexpobds.getExperiment().setValid(true);
 //				// Save the changes to vxfobds
-//				VxFOnBoardedDescriptor vxfobds_final = vxfOBDService.updateVxFOnBoardedDescriptor(vxfobds);
-//				BusController.getInstance().onBoardVxFSucceded( vxfobds_final );
-//				
-//			}			
-//		}		
-//		// OSM5 END
-//		// OSM4 START		
-//		// OSM4 END
-//	}
-
-//	public void checkAndDeleteTerminatedOrFailedDeployments() {
-//		logger.info("Check and Delete Terminated and Failed Deployments");
-//		List<DeploymentDescriptor> DeploymentDescriptorsToDelete = aMANOClient.getDeploymentsToBeDeleted();
-//		for (DeploymentDescriptor d : DeploymentDescriptorsToDelete) {
-//			// Launch the deployment
-//			logger.info("Send to bus control to delete: " + d.getId());
-//			aMANOClient.deleteExperiment(d);
+//				ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
+//				BusController.getInstance().onBoardNSDSucceded( uexpobds );
+//			}
 //		}
 //	}
-	
-//	public void checkAndDeployExperimentToMANOProvider() {
-//		logger.info("This will trigger the check and Deploy Experiments");
-//		// Check the database for a new deployment in the next minutes
-//		// If there is a deployment to be made and the status is Scheduled
-//		List<DeploymentDescriptor> DeploymentDescriptorsToRun = aMANOClient.getDeploymentsToInstantiate();
-//		// Foreach deployment found, start the instantiation
-//		for (DeploymentDescriptor d : DeploymentDescriptorsToRun) {
-//			// Launch the deployment
-//			logger.info("Send to bus control to deploy: " + d.getId());
-//			aMANOClient.deployExperiment(d);
+//	// OSM5 - END
+//}
+//
+///**
+// * offBoard a VNF to MANO Provider, as described by this descriptor
+// * 
+// * @param c
+// */
+//public ResponseEntity<String> offBoardVxFFromMANOProvider(VxFOnBoardedDescriptor obd)
+//		throws HttpClientErrorException {
+//	// TODO Auto-generated method stub
+//	ResponseEntity<String> response = null;
+//	// OSM5 START
+//	if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+//		String vnfd_id = obd.getDeployId();
+//		OSM5Client osm5Client = null;			
+//		try {
+//			osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
+//			MANOStatus.setOsm5CommunicationStatusActive(null);								
 //		}
+//	    catch(HttpStatusCodeException e) 
+//		{
+//			logger.error("offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting action.");
+//			CentralLogger.log( CLevel.ERROR, "offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting VxF offboarding action.");
+//			MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF offboarding action.");								
+//	        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
+//	                .body(e.getResponseBodyAsString());
+//		}						
+//		
+//		response = osm5Client.deleteVNFDPackage(vnfd_id);
+//	}
+//	// OSM5 END
+//	if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM TWO")) {
+//		response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
+//	}
+//	return response;
+//}
+//
+//private void checkVxFStatus(VxFOnBoardedDescriptor obd) throws Exception {
+//
+//	CamelContext tempcontext = new DefaultCamelContext();
+//	MANOController mcontroller = this;
+//	try {
+//		RouteBuilder rb = new RouteBuilder() {
+//			@Override
+//			public void configure() throws Exception {
+//				from("timer://getVNFRepoTimer?delay=2000&period=3000&repeatCount=6&daemon=true")
+//						.log("Will check VNF repo").setBody().constant(obd)
+//						.bean(mcontroller, "getVxFStatusFromOSM2Client");
+//			}
+//		};
+//		tempcontext.addRoutes(rb);
+//		tempcontext.start();
+//		Thread.sleep(30000);
+//	} finally {
+//		tempcontext.stop();
 //	}
 //
+//}
+//
+//
+//public ResponseEntity<String> offBoardNSDFromMANOProvider(ExperimentOnBoardDescriptor uexpobd) {
+//	// TODO Auto-generated method stub
+//	ResponseEntity<String> response = null;
+//	
+//	// OSM5 START
+//	if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+//		String nsd_id = uexpobd.getDeployId();
+//		OSM5Client osm5Client = null;			
+//		try {
+//			osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+//			MANOStatus.setOsm5CommunicationStatusActive(null);								
+//		}
+//	    catch(HttpStatusCodeException e) 
+//		{
+//			logger.error("offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
+//			CentralLogger.log( CLevel.ERROR, "offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
+//			MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD offboarding action.");								
+//	        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
+//	                .body(e.getResponseBodyAsString());
+//		}						
+//		response = osm5Client.deleteNSDPackage(nsd_id);
+//	}
+//	// OSM5 END
+//	
+//	// return new ResponseEntity<>("Not found", HttpStatus.NOT_FOUND);
+//	return response;
+//}
+//
+	
 	public void checkAndTerminateExperimentToMANOProvider() {
 		logger.info("This will trigger the check and Terminate Deployments");
 		// Check the database for a deployment to be completed in the next minutes
@@ -511,230 +718,6 @@ public class MANOController {
 		return null;
 	}
 
-//	public void onBoardNSDToMANOProvider( long uexpobdid ) throws Exception {
-//		ExperimentOnBoardDescriptor uexpobd = nsdOBDService.getExperimentOnBoardDescriptorByID(uexpobdid);
-//		
-//		if (uexpobd == null) {
-//			throw new Exception("uexpobd is NULL. Cannot load VxFOnBoardedDescriptor");
-//		}
-//		
-//		
-//		uexpobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
-//		CentralLogger.log( CLevel.INFO, "Onboarding status change of Experiment "+uexpobd.getExperiment().getName()+" to "+uexpobd.getOnBoardingStatus());													
-//		// This is the Deployment ID for the portal
-//		uexpobd.setDeployId(UUID.randomUUID().toString());
-//		ExperimentMetadata em = uexpobd.getExperiment();
-//		if (em == null) {
-//			em = (ExperimentMetadata) nsdService.getProductByID(uexpobd.getExperimentid());
-//		}
-//
-//		/**
-//		 * The following is not OK. When we submit to OSMClient the createOnBoardPackage
-//		 * we just get a response something like response = {"output":
-//		 * {"transaction-id": "b2718ef9-4391-4a9e-97ad-826593d5d332"}} which does not
-//		 * provide any information. The OSM RIFTIO API says that we could get
-//		 * information about onboarding (create or update) jobs see
-//		 * https://open.riftio.com/documentation/riftware/4.4/a/api/orchestration/pkt-mgmt/rw-pkg-mgmt-download-jobs.htm
-//		 * with /api/operational/download-jobs, but this does not return pending jobs.
-//		 * So the only solution is to ask again OSM if something is installed or not, so
-//		 * for now the client (the portal ) must check via the
-//		 * getVxFOnBoardedDescriptorByIdCheckMANOProvider giving the VNF ID in OSM. OSM
-//		 * uses the ID of the yaml description Thus we asume that the vxf name can be
-//		 * equal to the VNF ID in the portal, and we use it for now as the OSM ID. Later
-//		 * in future, either OSM API provide more usefull response or we extract info
-//		 * from the VNFD package
-//		 * 
-//		 */
-//
-//		uexpobd.setVxfMANOProviderID(em.getName()); // Possible Error. This probably needs to be
-//													// setExperimentMANOProviderID(em.getName())
-//
-//		uexpobd.setLastOnboarding(new Date());
-//
-//		ExperimentOnBoardDescriptor uexpobds = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobd);
-//		if (uexpobds == null) {
-//			throw new Exception("Cannot load NSDOnBoardedDescriptor");
-//		}
-//
-//		String pLocation = em.getPackageLocation();
-//		logger.info("NSD Package Location: " + pLocation);
-//		if (!pLocation.contains("http")) {
-//			pLocation = propsService.getPropertyByName( "maindomain" ).getValue() + pLocation;
-//		}
-////		if (!pLocation.contains("http")) {
-////			pLocation = "http:" + pLocation;
-////			pLocation = pLocation.replace("\\", "/");
-////		}				
-//
-//	
-//		
-//		// OSM5 - START
-//		if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-//			ResponseEntity<String> response = null;
-//			OSM5Client osm5Client = null;
-//			try {
-//				osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
-//				MANOStatus.setOsm5CommunicationStatusActive(null);								
-//			}
-//		    catch(Exception e) 
-//			{
-//				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting NSD Onboarding action.");
-//				MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD Onboarding action.");				
-//				// Set the reason of the failure
-//				uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
-//				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																	
-//				// Set Valid to false if it fails OnBoarding
-//				uexpobds.getExperiment().setValid(false);
-//				ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
-//				BusController.getInstance().onBoardNSDFailed( uexpobds );
-//				return ;
-//			}						
-//			
-//			response = osm5Client.createNSDPackage();
-//			if (response == null || response.getStatusCode().is4xxClientError()
-//					|| response.getStatusCode().is5xxServerError()) {
-//				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
-//				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																	
-//				// Set the reason of the failure
-//				uexpobds.setFeedbackMessage(response.getBody().toString());
-//				// Set Valid to false if it fails OnBoarding
-//				uexpobds.getExperiment().setValid(false);
-//				ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
-//				BusController.getInstance().onBoardNSDFailed( uexpobds );
-//				return;				
-//			}
-//			else
-//			{
-//				JSONObject obj = new JSONObject(response.getBody());
-//				String nsd_id = obj.getString("id");
-//				logger.info(response.getStatusCode()+" replied. The new NSD Package id is :" + nsd_id);
-//				logger.error("Uploading NSD Archive from URL " + pLocation);
-//				logger.error("************************");
-//				response = osm5Client.uploadNSDPackageContent(nsd_id, pLocation);
-//				if (response == null || response.getStatusCode().is4xxClientError()
-//						|| response.getStatusCode().is5xxServerError()) {
-//					logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
-//					osm5Client.deleteNSDPackage(nsd_id);
-//					uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-//					CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																						
-//					uexpobds.setFeedbackMessage(response.getBody().toString());
-//					// Set Valid to false if it fails OnBoarding
-//					uexpobds.getExperiment().setValid(false);
-//					ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
-//					BusController.getInstance().onBoardNSDFailed( uexpobds );
-//					return;
-//				}
-//				else
-//				{
-//					uexpobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-//					CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());																						
-//					uexpobds.setFeedbackMessage("NSD Onboarded Successfully");
-//					// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
-//					uexpobds.setDeployId(nsd_id);
-//					// What should be the NSD Name. Something like cirros_nsd.
-//					uexpobds.setExperimentMANOProviderID(em.getName());
-//					// Set Onboarding date
-//					uexpobds.setLastOnboarding(new Date());
-//					// We decide to set valid when we have the final version. Thus we comment this.
-//					// uexpobds.getExperiment().setValid(true);
-//					// Save the changes to vxfobds
-//					ExperimentOnBoardDescriptor uexpobd_final = nsdOBDService.updateExperimentOnBoardDescriptor(uexpobds);
-//					BusController.getInstance().onBoardNSDSucceded( uexpobds );
-//				}
-//			}
-//		}
-//		// OSM5 - END
-//	}
-//
-//	/**
-//	 * offBoard a VNF to MANO Provider, as described by this descriptor
-//	 * 
-//	 * @param c
-//	 */
-//	public ResponseEntity<String> offBoardVxFFromMANOProvider(VxFOnBoardedDescriptor obd)
-//			throws HttpClientErrorException {
-//		// TODO Auto-generated method stub
-//		ResponseEntity<String> response = null;
-//		// OSM5 START
-//		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-//			String vnfd_id = obd.getDeployId();
-//			OSM5Client osm5Client = null;			
-//			try {
-//				osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
-//				MANOStatus.setOsm5CommunicationStatusActive(null);								
-//			}
-//		    catch(HttpStatusCodeException e) 
-//			{
-//				logger.error("offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				CentralLogger.log( CLevel.ERROR, "offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting VxF offboarding action.");
-//				MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF offboarding action.");								
-//		        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
-//		                .body(e.getResponseBodyAsString());
-//			}						
-//			
-//			response = osm5Client.deleteVNFDPackage(vnfd_id);
-//		}
-//		// OSM5 END
-//		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM TWO")) {
-//			response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
-//		}
-//		return response;
-//	}
-//
-//	private void checkVxFStatus(VxFOnBoardedDescriptor obd) throws Exception {
-//
-//		CamelContext tempcontext = new DefaultCamelContext();
-//		MANOController mcontroller = this;
-//		try {
-//			RouteBuilder rb = new RouteBuilder() {
-//				@Override
-//				public void configure() throws Exception {
-//					from("timer://getVNFRepoTimer?delay=2000&period=3000&repeatCount=6&daemon=true")
-//							.log("Will check VNF repo").setBody().constant(obd)
-//							.bean(mcontroller, "getVxFStatusFromOSM2Client");
-//				}
-//			};
-//			tempcontext.addRoutes(rb);
-//			tempcontext.start();
-//			Thread.sleep(30000);
-//		} finally {
-//			tempcontext.stop();
-//		}
-//
-//	}
-//
-//	
-//	public ResponseEntity<String> offBoardNSDFromMANOProvider(ExperimentOnBoardDescriptor uexpobd) {
-//		// TODO Auto-generated method stub
-//		ResponseEntity<String> response = null;
-//		
-//		// OSM5 START
-//		if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-//			String nsd_id = uexpobd.getDeployId();
-//			OSM5Client osm5Client = null;			
-//			try {
-//				osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
-//				MANOStatus.setOsm5CommunicationStatusActive(null);								
-//			}
-//		    catch(HttpStatusCodeException e) 
-//			{
-//				logger.error("offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				CentralLogger.log( CLevel.ERROR, "offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-//				MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD offboarding action.");								
-//		        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
-//		                .body(e.getResponseBodyAsString());
-//			}						
-//			response = osm5Client.deleteNSDPackage(nsd_id);
-//		}
-//		// OSM5 END
-//		
-//		// return new ResponseEntity<>("Not found", HttpStatus.NOT_FOUND);
-//		return response;
-//	}
-//
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
 		logger.info("Starting deployNSDToMANOProvicer");

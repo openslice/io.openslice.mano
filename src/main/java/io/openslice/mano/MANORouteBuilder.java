@@ -27,9 +27,13 @@ import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.dataformat.JsonLibrary;
+import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+
+import io.openslice.model.VxFOnBoardedDescriptor;
 
 /**
  * @author ctranoris
@@ -119,28 +123,51 @@ public class MANORouteBuilder  extends RouteBuilder{
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 
 		// in order to create the marshalling
 		from("seda:nsd.deployment.instantiation.success?multipleConsumers=true")
-		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
 		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.instantiation.success" );
 
 		from("seda:nsd.deployment.instantiation.fail?multipleConsumers=true")
-		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
 		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.instantiation.fail" );		
 
 		from("seda:nsd.deployment.termination.success?multipleConsumers=true")
-		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
 		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.termination.success" );				
 
 		from("seda:nsd.deployment.termination.fail?multipleConsumers=true")
-		//.bean( MANOClient.class , "getDeploymentEagerDataJson" )
 		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.termination.fail" );		
+		
+		from("activemq:topic:vxf.onboard")
+		.log( "activemq:topic:vxf.onboard for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
+		.bean( aMANOController, "onBoardVxFToMANOProvider" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");
+		
+		from("activemq:topic:vxf.offboard")
+		.log( "activemq:topic:vxf.offboard for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
+		.doTry()
+			.bean( aMANOController, "offBoardVxFFromMANOProvider" ) //Replies with a ResponseInstance 
+			.marshal().json( JsonLibrary.Jackson, true)
+			.convertBodyTo(String.class)
+        	.log("offboarding ok with ${body}")
+        .doCatch(Exception.class)
+        	.setBody(exceptionMessage())
+        	.log("offboard failed with exception ${body}")
+        .end();
+		
+		
+		
+		from("seda:vxf.onboard.success?multipleConsumers=true")
+		.marshal().json( JsonLibrary.Jackson, VxFOnBoardedDescriptor.class, true)
+		.convertBodyTo( String.class )
+		.to( "activemq:topic:vxf.onboard.success" );
+				
 	}
 
 
