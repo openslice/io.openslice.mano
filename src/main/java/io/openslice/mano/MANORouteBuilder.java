@@ -117,7 +117,7 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		.log("NS deletion failed!").stop();
 //		**********************************************************************************************
 		
-		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=20000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
+		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
 		
 		// THESE SEND THE DeploymentDescriptor Object to Bugzilla for status updates		
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 

@@ -741,8 +741,12 @@ public class MANOController {
 				//CentralLogger.log( CLevel.ERROR, "deployNSDToMANOProvider, OSM5 fails authentication! Aborting deployment of NSD.");
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting deployment of NSD.");								
 				// NS instance creation failed
-				deploymentdescriptor.setFeedback("OSM5 communication failed. Aborting NSD deployment action.");
-				aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
+				//deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
+				deploymentdescriptor.setFeedback( (new Date()) + "OSM5 communication failed. Aborting NSD deployment action. " );
+				deploymentdescriptor.setOperationalStatus((new Date()) + " communication-failure ");
+				deploymentdescriptor = aMANOClient
+						.updateDeploymentDescriptor(deploymentdescriptor);
+				//aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
 				return;
 			}
 
