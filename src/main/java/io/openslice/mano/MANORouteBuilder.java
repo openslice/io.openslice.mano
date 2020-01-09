@@ -160,8 +160,25 @@ public class MANORouteBuilder  extends RouteBuilder{
         	.setBody(exceptionMessage())
         	.log("offboard failed with exception ${body}")
         .end();
+
+		from("activemq:topic:nsd.onboard")
+		.log( "activemq:topic:nsd.onboard for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.ExperimentOnBoardDescriptor.class, true)
+		.bean( aMANOController, "onBoardNSDToMANOProvider" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");
 		
-		
+		from("activemq:topic:nsd.offboard")
+		.log( "activemq:topic:nsd.offboard for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.ExperimentOnBoardDescriptor.class, true)
+		.doTry()
+			.bean( aMANOController, "offBoardNSDFromMANOProvider" ) //Replies with a ResponseInstance 
+			.marshal().json( JsonLibrary.Jackson, true)
+			.convertBodyTo(String.class)
+        	.log("offboarding ok with ${body}")
+        .doCatch(Exception.class)
+        	.setBody(exceptionMessage())
+        	.log("offboard failed with exception ${body}")
+        .end();
 		
 		from("seda:vxf.onboard.success?multipleConsumers=true")
 		.marshal().json( JsonLibrary.Jackson, VxFOnBoardedDescriptor.class, true)

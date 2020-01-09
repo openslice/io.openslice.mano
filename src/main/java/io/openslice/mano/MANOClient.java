@@ -21,6 +21,7 @@ import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.ExperimentMetadata;
+import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
@@ -266,6 +267,32 @@ public class MANOClient {
 		}
 		return vxfm;	
 	}
+
+	public ExperimentMetadata getNSDById(long id) {
+		String ret = template.requestBody( "activemq:queue:getNSDByID", id, String.class);
+		logger.info("Message Received from AMQ:"+ret);
+		ExperimentMetadata expm = null;
+		// Map object to ExperimentMetadata
+		try {
+			// Map object to ExperimentMetadata
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:"+ret.toString());
+			expm = mapper.readValue(ret, ExperimentMetadata.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return expm;	
+	}
 	
 	private ExperimentMetadata getExperimentById(long id) {
 		String ret = template.requestBody( "activemq:queue:getNSDByID", id, String.class);
@@ -332,6 +359,45 @@ public class MANOClient {
 			e11.printStackTrace();
 		}
 		return vxfd;			
+	}
+	
+	public ExperimentOnBoardDescriptor updateExperimentOnBoardDescriptor(ExperimentOnBoardDescriptor expobd2send)
+	{
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+        //Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+        //mapper.registerModule(new Hibernate5Module()); 
+		String expobd_serialized = null;
+		try {
+			expobd_serialized = mapper.writeValueAsString( expobd2send );
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + expobd_serialized + " to updateVxFOnBoardedDescriptor from AMQ:");		
+		// Send it to activemq endpoint
+		String ret = template.requestBody( "activemq:queue:updateExperimentOnBoardDescriptor",  expobd_serialized, String.class);
+		logger.info("Message Received for updateExperimentOnBoardDescriptor from AMQ:"+ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		ExperimentOnBoardDescriptor experimentobd = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:"+ret.toString());
+			experimentobd = mapper.readValue(ret, ExperimentOnBoardDescriptor.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return experimentobd;			
 	}
 	
 	// Update the data in the portal api (database)
@@ -483,5 +549,14 @@ public class MANOClient {
 		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:vxf.onboard.success?multipleConsumers=true");
 		template.withBody( vxfobds_final ).asyncSend();				
 	}
-	
+
+	public void onBoardNSDFailed(ExperimentOnBoardDescriptor experimentobds_final) {
+		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.onboard.fail?multipleConsumers=true");
+		template.withBody( experimentobds_final ).asyncSend();			
+	}
+
+	public void onBoardNSDSucceded(ExperimentOnBoardDescriptor experimentobds_final) {
+		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.onboard.success?multipleConsumers=true");
+		template.withBody( experimentobds_final ).asyncSend();				
+	}	
 }
