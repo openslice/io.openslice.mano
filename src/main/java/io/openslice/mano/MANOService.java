@@ -25,6 +25,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.context.config.annotation.RefreshScope;
+import org.springframework.context.annotation.ComponentScan;
 
 
 /**
@@ -47,6 +48,9 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 @EnableAutoConfiguration
 // This is enabled by default
 @EnableConfigurationProperties
+@ComponentScan(basePackages = { 
+		"io.openslice.mano",
+		"io.openslice.centrallog.client"	})
 public class MANOService {
 	public static void main(String[] args) {		
 		SpringApplication.run( MANOService.class, args);	
