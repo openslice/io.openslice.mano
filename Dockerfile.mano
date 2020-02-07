@@ -1,5 +1,6 @@
-FROM openjdk:8-alpine
+FROM adoptopenjdk/openjdk13-openj9:latest
 MAINTAINER openslice.io
+RUN mkdir /opt/shareclasses
+RUN mkdir -p /opt/openslice/lib/
 COPY target/io.openslice.manoclient-0.0.1-SNAPSHOT.jar /opt/openslice/lib/
-ENTRYPOINT ["/usr/bin/java"]
-CMD ["-jar", "/opt/openslice/lib/io.openslice.manoclient-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-Xshareclasses:cacheDir=/opt/shareclasses","-jar", "/opt/openslice/lib/io.openslice.manoclient-0.0.1-SNAPSHOT.jar"]
