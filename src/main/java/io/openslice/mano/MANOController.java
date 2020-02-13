@@ -470,7 +470,7 @@ public class MANOController {
 	
 	public void checkAndUpdateRunningDeploymentDescriptors() {
 		logger.info("Update Deployment Descriptors");
-		CentralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!", compname);		
+		//CentralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!", compname);		
 		try
 		{
 			List<DeploymentDescriptor> runningDeploymentDescriptors = aMANOClient.getRunningInstantiatingAndTerminatingDeployments();
