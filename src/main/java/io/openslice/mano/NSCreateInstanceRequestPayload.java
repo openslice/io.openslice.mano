@@ -29,7 +29,7 @@ import io.openslice.model.DeploymentDescriptor;
  */
 public class NSCreateInstanceRequestPayload extends NSInstantiateInstanceRequestPayload
 {	
-	public String notificationType="NsIdentifierCreationNotification";
+	//public String notificationType="NsIdentifierCreationNotification";
 	
 	
 	public NSCreateInstanceRequestPayload(DeploymentDescriptor deploymentdescriptor)

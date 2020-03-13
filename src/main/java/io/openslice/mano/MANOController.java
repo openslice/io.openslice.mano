@@ -36,7 +36,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 
-import OSM5NBIClient.OSM5Client;
+//import OSM5NBIClient.OSM5Client;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.DeploymentDescriptorStatus;
 import io.openslice.model.ExperimentMetadata;
@@ -44,6 +44,7 @@ import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
 import io.openslice.model.VxFOnBoardedDescriptor;
+import io.openslice.sol005nbi.OSMClient;
 import io.openslice.centrallog.client.*;
 
 /**
@@ -94,18 +95,7 @@ public class MANOController {
 //	public MANOController aMANOControllerBean() {
 //		return new MANOController();
 //	}
-//
-////	private static String HTTP_SCHEME = "https:";
-//
-////	public static void setHTTPSCHEME(String url) {
-////		logger.info("setHTTPSCHEME url = " + url);
-//////		if (url.contains("localhost")) {
-//////			HTTP_SCHEME = "http:";
-//////		}
-////		// HTTP_SCHEME = url + ":";
-////	}
-//
-//	
+
 	/**
 	 * onBoard a VNF to MANO Provider, as described by this descriptor
 	 * 
@@ -132,22 +122,24 @@ public class MANOController {
 		}
 		//Reload the vxf for the updated object.
 		vxfobds.setVxf(aMANOClient.getVxFById(vxfobds.getVxfid()));					
-		
+				
+		String manoVersion = vxfobds.getObMANOprovider().getSupportedMANOplatform().getName();
 		// OSM5 START
-		if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-			OSM5Client osm5Client = null;
+		//if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+			OSMClient osmClient = null;
 			try {
-				osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
-				//MANOStatus.setOsm5CommunicationStatusActive(null);													
+				//osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
+				//MANOStatus.setOsm5CommunicationStatusActive(null);
+				osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(Exception e) 
 			{
-				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");				
-				CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.", compname);
+				logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");				
+				CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
 				
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding action.");																	
 				// Set the reason of the failure
-				vxfobds.setFeedbackMessage("OSM5 communication failed. Aborting VxF OnBoarding action.");
+				vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
 				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
 				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);
 				logger.error("Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());
@@ -163,7 +155,7 @@ public class MANOController {
 			}						
 			
 			ResponseEntity<String> response = null;
-			response = osm5Client.createVNFDPackage();
+			response = osmClient.createVNFDPackage();
 			if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
 				logger.error("VNFD Package Creation failed.");
 				// Set status
@@ -185,12 +177,12 @@ public class MANOController {
 				logger.info(response.getStatusCode()+" replied. The new VNFD Package id is :" + vnfd_id);
 				String pLocation = vxfobd.getVxf().getPackageLocation();
 				logger.info("Package location to onboard is :" + pLocation);
-				response = osm5Client.uploadVNFDPackageContent(vnfd_id, pLocation);
+				response = osmClient.uploadVNFDPackageContent(vnfd_id, pLocation);
 				if (response == null || response.getStatusCode().is4xxClientError()
 						|| response.getStatusCode().is5xxServerError()) {
 					logger.error("Upload of VNFD Package Content failed. Deleting VNFD Package.");
 					// Delete the package from the OSM
-					osm5Client.deleteVNFDPackage(vnfd_id);
+					osmClient.deleteVNFDPackage(vnfd_id);
 					// Set status
 					vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
 					CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);											
@@ -222,7 +214,7 @@ public class MANOController {
 				aMANOClient.onBoardVxFSucceded( vxfobds_final );
 				
 			}			
-		}		
+		//}		
 		// OSM5 END
 	}
 
@@ -236,24 +228,26 @@ public class MANOController {
 		// TODO Auto-generated method stub
 		ResponseEntity<String> response = null;
 		// OSM5 START
-		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
 			String vnfd_id = obd.getDeployId();
-			OSM5Client osm5Client = null;			
+			String manoVersion=obd.getObMANOprovider().getSupportedMANOplatform().getName();
+			OSMClient osmClient = null;			
 			try {
-				osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
+				//osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
 				//MANOStatus.setOsm5CommunicationStatusActive(null);								
+				osmClient = OSMClientFactory.getOSMClient(manoVersion , obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(HttpStatusCodeException e) 
 			{
-				logger.error("offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting action.");
+				logger.error("offBoardVxFFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
 				CentralLogger.log( CLevel.ERROR, "offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting VxF offboarding action.", compname);
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF offboarding action.");								
 		        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
 		                .body(e.getResponseBodyAsString());
 			}						
 			
-			response = osm5Client.deleteVNFDPackage(vnfd_id);
-		}
+			response = osmClient.deleteVNFDPackage(vnfd_id);
+		//}
 		// OSM5 END
 		if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM TWO")) {
 			response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
@@ -290,18 +284,20 @@ public class MANOController {
 		}
 		uexpobds.setExperiment(em);
 	
-		// OSM5 - START
-		if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-			OSM5Client osm5Client = null;
+			// OSM5 - START
+			//if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+			String manoVersion = uexpobds.getObMANOprovider().getSupportedMANOplatform().getName();
+			OSMClient osmClient = null;
 			try {
-				osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+				//osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 				//MANOStatus.setOsm5CommunicationStatusActive(null);								
+				osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(Exception e) 
 			{
-				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-				CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting NSD Onboarding action.", compname);
-				logger.error("onBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting NSD Onboarding action.");
+				logger.error("onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting action.");
+				CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting NSD Onboarding action.", compname);
+				logger.error("onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting NSD Onboarding action.");
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD Onboarding action.");				
 				// Set the reason of the failure
 				uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
@@ -310,23 +306,23 @@ public class MANOController {
 				logger.error("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
 				// Set Valid to false if it fails OnBoarding
 				uexpobds.getExperiment().setValid(false);
-				ExperimentOnBoardDescriptor uexpobd_final = aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+				aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
 				aMANOClient.onBoardNSDFailed( uexpobds );
 				return ;
 			}						
 			
 			ResponseEntity<String> response = null;
-			response = osm5Client.createNSDPackage();
+			response = osmClient.createNSDPackage();
 			if (response == null || response.getStatusCode().is4xxClientError()
 					|| response.getStatusCode().is5xxServerError()) {
-				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
+				logger.error("Creation of NSD Package Content failed. Deleting NSD Package.");
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
 				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
 				// Set the reason of the failure
 				uexpobds.setFeedbackMessage(response.getBody().toString());
 				// Set Valid to false if it fails OnBoarding
 				uexpobds.getExperiment().setValid(false);
-				ExperimentOnBoardDescriptor uexpobd_final = aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+				aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
 				aMANOClient.onBoardNSDFailed( uexpobds );
 				return;				
 			}
@@ -337,18 +333,18 @@ public class MANOController {
 				logger.info(response.getStatusCode()+" replied. The new NSD Package id is :" + nsd_id);
 				String pLocation = uexpobd.getExperiment().getPackageLocation();
 				logger.info("Package location to onboard is :" + pLocation);
-				response = osm5Client.uploadNSDPackageContent(nsd_id, pLocation);
-				if (response == null || response.getStatusCode().is4xxClientError()
-						|| response.getStatusCode().is5xxServerError()) {
+				response = osmClient.uploadNSDPackageContent(nsd_id, pLocation);
+				if (response == null || response.getStatusCode().is4xxClientError()	|| response.getStatusCode().is5xxServerError()) {
 					logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
-					osm5Client.deleteNSDPackage(nsd_id);
+					osmClient.deleteNSDPackage(nsd_id);
 					uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
 					CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
 					logger.error("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
 					uexpobds.setFeedbackMessage(response.getBody().toString());
+					logger.error("Onboarding Feedbacj Message of Experiment "+uexpobds.getExperiment().getName()+" is "+uexpobds.getFeedbackMessage());
 					// Set Valid to false if it fails OnBoarding
 					uexpobds.getExperiment().setValid(false);
-					ExperimentOnBoardDescriptor uexpobd_final = aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+					aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
 					aMANOClient.onBoardNSDFailed( uexpobds );
 					return;
 				}
@@ -367,11 +363,11 @@ public class MANOController {
 					// We decide to set valid when we have the final version. Thus we comment this.
 					// uexpobds.getExperiment().setValid(true);
 					// Save the changes to vxfobds
-					ExperimentOnBoardDescriptor uexpobd_final = aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+					aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
 					aMANOClient.onBoardNSDSucceded( uexpobds );
 				}
 			}
-		}
+		//}
 		// OSM5 - END
 	}
 
@@ -380,23 +376,25 @@ public class MANOController {
 	ResponseEntity<String> response = null;
 	
 	// OSM5 START
-	if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+	//if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
 		String nsd_id = uexpobd.getDeployId();
-		OSM5Client osm5Client = null;			
+		String manoVersion = uexpobd.getObMANOprovider().getSupportedMANOplatform().getName();
+		OSMClient osmClient = null;			
 		try {
-			osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+			//osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 			//MANOStatus.setOsm5CommunicationStatusActive(null);								
+			osmClient = OSMClientFactory.getOSMClient(manoVersion, uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 		}
 	    catch(HttpStatusCodeException e) 
 		{
-			logger.error("offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.");
-			CentralLogger.log( CLevel.ERROR, "offBoardNSDFromMANOProvider, OSM5 fails authentication. Aborting action.", compname);
+			logger.error("offBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
+			CentralLogger.log( CLevel.ERROR, "offBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
 			//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD offboarding action.");								
 	        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
 	                .body(e.getResponseBodyAsString());
 		}						
-		response = osm5Client.deleteNSDPackage(nsd_id);
-	}
+		response = osmClient.deleteNSDPackage(nsd_id);
+	//}
 	// OSM5 END
 	if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM TWO")) {
 		response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
@@ -478,7 +476,7 @@ public class MANOController {
 			{
 				System.out.println("NSD name:"+nsd.getName());
 			}
-			OSM5Client osm5Client = null;
+			OSMClient osmClient = null;
 			// For each deployment get the status info and the IPs
 			for (int i = 0; i < runningDeploymentDescriptors.size(); i++) {
 				DeploymentDescriptor deployment_tmp = aMANOClient.getDeploymentByIdEager(runningDeploymentDescriptors.get(i).getId());
@@ -487,24 +485,25 @@ public class MANOController {
 					// Get the MANO Provider for each deployment			
 					long tmp_MANOprovider_id = getExperimOBD( deployment_tmp ).getObMANOprovider().getId();
 					MANOprovider sm = aMANOClient.getMANOproviderByID( tmp_MANOprovider_id );
-					
+					String manoVersion = sm.getSupportedMANOplatform().getName();
 					//OSM5 - START
-					if (sm.getSupportedMANOplatform().getName().equals("OSM FIVE")) {
-						if (osm5Client == null || !osm5Client.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
+					//if (sm.getSupportedMANOplatform().getName().equals("OSM FIVE")) {						
+						if (osmClient == null || !osmClient.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
 							try
 							{
-								osm5Client = new OSM5Client(sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), "admin");							
+								//osm5Client = new OSM5Client(sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), "admin");							
 	//							MANOStatus.setOsm5CommunicationStatusActive(null);
+								osmClient = OSMClientFactory.getOSMClient(manoVersion, sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), "admin");								
 							}
 							catch(Exception e)
 							{
-								logger.error("OSM5 fails authentication");
-								CentralLogger.log( CLevel.ERROR, "OSM5 fails authentication", compname);							
+								logger.error(manoVersion + " fails authentication");
+								CentralLogger.log( CLevel.ERROR, manoVersion + " fails authentication", compname);							
 	//							MANOStatus.setOsm5CommunicationStatusFailed(null);
 								return;
 							}
 						}
-						JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(deployment_tmp.getInstanceId());
+						JSONObject ns_instance_info = osmClient.getNSInstanceInfo(deployment_tmp.getInstanceId());
 						// If the no nsd with the specific id is found, mark the instance as faile to delete.
 						if(ns_instance_info == null)
 						{
@@ -535,7 +534,7 @@ public class MANOController {
 											if (j > 0) {
 												deployment_tmp.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps() + ", ");
 											}
-											ResponseEntity<String> vnf_instance_id_info_response = osm5Client.getVNFInstanceInfoNew(ns_instance_info.getJSONArray("constituent-vnfr-ref").get(j).toString());
+											ResponseEntity<String> vnf_instance_id_info_response = osmClient.getVNFInstanceInfoNew(ns_instance_info.getJSONArray("constituent-vnfr-ref").get(j).toString());
 											if(!vnf_instance_id_info_response.getStatusCode().is4xxClientError() && !vnf_instance_id_info_response.getStatusCode().is5xxServerError() )
 											{
 												JSONObject vnf_instance_info = new JSONObject(vnf_instance_id_info_response.getBody());
@@ -575,7 +574,7 @@ public class MANOController {
 										if (j > 0) {
 											deployment_tmp.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps() + ", ");
 										}
-										ResponseEntity<String> vnf_instance_id_info_response = osm5Client.getVNFInstanceInfoNew(ns_instance_info.getJSONArray("constituent-vnfr-ref").get(j).toString());
+										ResponseEntity<String> vnf_instance_id_info_response = osmClient.getVNFInstanceInfoNew(ns_instance_info.getJSONArray("constituent-vnfr-ref").get(j).toString());
 										if(!vnf_instance_id_info_response.getStatusCode().is4xxClientError() && !vnf_instance_id_info_response.getStatusCode().is5xxServerError() )
 										{
 											JSONObject vnf_instance_info = new JSONObject(vnf_instance_id_info_response.getBody());
@@ -635,7 +634,7 @@ public class MANOController {
 								logger.error(e.getMessage());
 							}
 						}
-					}
+					//}
 					//OSM5 - END												
 				} catch (Exception e) {
 					logger.error(e.getMessage());
@@ -666,25 +665,31 @@ public class MANOController {
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);		
 		// OSM5 - START
 		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
-		if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
-			OSM5Client osm5Client = null;
+			OSMClient osmClient = null;
 			try {
-				 osm5Client = new OSM5Client(
+					// osm5Client = new OSM5Client(
+					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+					//		"admin");
+					//MANOStatus.setOsm5CommunicationStatusActive(null);
+				logger.debug("Connecting to "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" MANO Client");
+				osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getName(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
 						"admin");
-					//MANOStatus.setOsm5CommunicationStatusActive(null);													
 			}
 			catch(Exception e)
 			{
-				logger.error("deployNSDToMANOProvider, OSM5 fails authentication! Aborting deployment of NSD.");
-				CentralLogger.log( CLevel.ERROR, "deployNSDToMANOProvider, OSM5 fails authentication! Aborting deployment of NSD.", compname);
+				logger.error("deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting deployment of NSD.");
+				CentralLogger.log( CLevel.ERROR, "deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting deployment of NSD.", compname);
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting deployment of NSD.");								
 				// NS instance creation failed
 				//deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
-				deploymentdescriptor.setFeedback( (new Date()) + "OSM5 communication failed. Aborting NSD deployment action. " );
+				deploymentdescriptor.setFeedback( (new Date()) + tmp.getObMANOprovider().getSupportedMANOplatform().getName() + "  communication failed. Aborting NSD deployment action. " );
 				deploymentdescriptor.setOperationalStatus((new Date()) + " communication-failure ");
 				deploymentdescriptor = aMANOClient
 						.updateDeploymentDescriptor(deploymentdescriptor);
@@ -695,8 +700,7 @@ public class MANOController {
 			NSCreateInstanceRequestPayload nscreateinstancerequestpayload = new NSCreateInstanceRequestPayload(deploymentdescriptor);
 			// Get Experiment ID and VIM ID and create NS Instance.
 			logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload.toJSON());
-			ResponseEntity<String> ns_instance_creation_entity = osm5Client
-					.createNSInstance(nscreateinstancerequestpayload.toJSON());
+			ResponseEntity<String> ns_instance_creation_entity = osmClient.createNSInstance(nscreateinstancerequestpayload.toJSON());
 			// The NS Instance ID is set
 
 			// NS instance creation
@@ -726,7 +730,7 @@ public class MANOController {
 				// Here we need the feedback
 				// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
 				// nsrequestpayload.toJSON());
-				ResponseEntity<String> instantiate_ns_instance_entity = osm5Client.instantiateNSInstance(nsd_instance_id, nsrequestpayload.toJSON());
+				ResponseEntity<String> instantiate_ns_instance_entity = osmClient.instantiateNSInstance(nsd_instance_id, nsrequestpayload.toJSON());
 				if (instantiate_ns_instance_entity == null || instantiate_ns_instance_entity.getStatusCode().is4xxClientError() || instantiate_ns_instance_entity.getStatusCode().is5xxServerError()) {
 					// NS Instantiation failed
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
@@ -748,12 +752,11 @@ public class MANOController {
 					deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
 					logger.info("NS Instantiation of NS with id" + nsd_instance_id + " started.");
 					// Save the changes to DeploymentDescriptor
-					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
-							.updateDeploymentDescriptor(deploymentdescriptor);
+					aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
 					//aMANOClient.deploymentInstantiationSucceded(deploymentdescriptor_final );
 				}
 			}
-		}
+		//}
 		// OSM5 - END		
 		return;
 	}
@@ -764,7 +767,7 @@ public class MANOController {
 		
 		
 		// OSM5 START
-		if ( getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if ( getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
 			 //deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATING ||			
 			logger.info("Current status change before termination is :"+deploymentdescriptor.getStatus());
 			if( deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.INSTANTIATING || deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.RUNNING || deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED )
@@ -772,11 +775,16 @@ public class MANOController {
 				try
 				{
 					MANOprovider tmpMANOProvider = getExperimOBD(deploymentdescriptor).getObMANOprovider();
-					OSM5Client osm5Client = new OSM5Client(
+					//OSM5Client osm5Client = new OSM5Client(
+					//		tmpMANOProvider.getApiEndpoint(),
+					//		tmpMANOProvider.getUsername(),
+					//		tmpMANOProvider.getPassword(),
+					//		"admin");
+					OSMClient osmClient = OSMClientFactory.getOSMClient(getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName(),
 							tmpMANOProvider.getApiEndpoint(),
 							tmpMANOProvider.getUsername(),
 							tmpMANOProvider.getPassword(),
-							"admin");
+							"admin");												 
 					
 					//MANOStatus.setOsm5CommunicationStatusActive(null);				
 //					JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(deploymentdescriptor.getInstanceId());
@@ -790,7 +798,7 @@ public class MANOController {
 //						deploymentdescriptor.setDetailedStatus(ns_instance_info.getString("detailed-status").replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
 //						if( deploymentdescriptor.getOperationalStatus() != "terminating" && deploymentdescriptor.getOperationalStatus() != "terminated" )
 //						{
-							ResponseEntity<String> response = osm5Client.terminateNSInstanceNew(deploymentdescriptor.getInstanceId()); 
+							ResponseEntity<String> response = osmClient.terminateNSInstanceNew(deploymentdescriptor.getInstanceId()); 
 							if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) 
 							{
 								deploymentdescriptor.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
@@ -826,10 +834,10 @@ public class MANOController {
 				catch(Exception e)
 				{
 					//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD termination action.");													
-					CentralLogger.log( CLevel.ERROR, "terminateNSFromMANOProvider, OSM5 fails authentication. Aborting action.", compname);
+					CentralLogger.log( CLevel.ERROR, "terminateNSFromMANOProvider, " + getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName() + " fails authentication. Aborting action.", compname);
 				}
 			}
-		}
+		//}
 		// OSM5 END
 	}
 
@@ -845,8 +853,10 @@ public class MANOController {
 			aMANOplatform = "UNKNOWN";
 		}							
 		// OSM5 START
-		if ( aMANOplatform.equals("OSM FIVE")) {
-			logger.info("Descriptor targets an OSM FIVE deploymentdescriptorid: " + deploymentdescriptorid);		
+		//if ( aMANOplatform.equals("OSM FIVE")) {
+		if(OSMClientFactory.isOSMVersionSupported(aMANOplatform))
+		{
+			logger.info("Descriptor targets an "+aMANOplatform+" deploymentdescriptorid: " + deploymentdescriptorid);		
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
 			// After TERMINATION
 			boolean force;
@@ -865,27 +875,32 @@ public class MANOController {
 				logger.info("Skipping deletion. Status of " + deploymentdescriptor.getId() +" is "+ deploymentdescriptor.getStatus());
 				return;
 			}
-			OSM5Client osm5Client = null;
+			OSMClient osmClient = null;
 			try
 			{
-				 osm5Client = new OSM5Client(
-						 getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
-						 getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
-						 getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
-						"admin");	
+					// osm5Client = new OSM5Client(
+					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+					//		"admin");	
+					osmClient = OSMClientFactory.getOSMClient(aMANOplatform, 							
+							getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+							getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+							getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+							"admin");												 
 					//MANOStatus.setOsm5CommunicationStatusActive(null);													
 			}
 			catch(Exception e)
 			{
-				logger.error("OSM5 fails authentication");
+				logger.error(aMANOplatform+" fails authentication");
 				//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NS deletion action.");													
-				CentralLogger.log( CLevel.ERROR, "OSM5 fails authentication", compname);
-				deploymentdescriptor.setFeedback("OSM5 communication failed. Aborting NS deletion action.");				
+				CentralLogger.log( CLevel.ERROR, aMANOplatform+" fails authentication", compname);
+				deploymentdescriptor.setFeedback(aMANOplatform+" communication failed. Aborting NS deletion action.");				
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
 				aMANOClient.deleteInstanceFailed(deploymentdescriptor);				
 				return;
 			}
-			ResponseEntity<String> deletion_response = osm5Client.deleteNSInstanceNew(deploymentdescriptor.getInstanceId(),force); 
+			ResponseEntity<String> deletion_response = osmClient.deleteNSInstanceNew(deploymentdescriptor.getInstanceId(),force); 
 			if (deletion_response.getStatusCode().is4xxClientError() || deletion_response.getStatusCode().is5xxServerError()) {
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.DELETION_FAILED);
 				CentralLogger.log( CLevel.INFO, "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus(), compname);
@@ -934,14 +949,14 @@ public class MANOController {
 				}
 			}
 		} else {
-			//if this is not a suported OSM then just complete
+			//if this is not a supported OSM then just complete
 			logger.info("Descriptor targets an older not supported OSM deploymentdescriptorid: " + deploymentdescriptorid);		
 			deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);	
 			logger.info( "Status change of deployment " + deploymentdescriptor.getId()+", "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());					
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
 			logger.info("NS status changed is now :" + deploymentdescriptor_final.getStatus());															
 		}
+		// OSM5 END
 	}
-	// OSM5 END
 	
 }
