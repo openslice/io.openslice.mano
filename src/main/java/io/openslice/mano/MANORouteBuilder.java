@@ -21,6 +21,8 @@
 
 package io.openslice.mano;
 
+import java.io.File;
+
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -33,6 +35,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
+import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
 
 /**
@@ -47,7 +50,6 @@ public class MANORouteBuilder  extends RouteBuilder{
 	@Autowired
 	MANOController aMANOController;
 
-	
 	public static void main(String[] args) throws Exception {
 		//new Main().run(args);				
 		CamelContext tempcontext = new DefaultCamelContext();
@@ -142,6 +144,11 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:nsd.deployment.termination.fail" );		
 		
+		from("seda:vxf.onboard.success?multipleConsumers=true")
+		.marshal().json( JsonLibrary.Jackson, VxFOnBoardedDescriptor.class, true)
+		.convertBodyTo( String.class )
+		.to( "activemq:topic:vxf.onboard.success" );
+				
 		from("activemq:topic:vxf.onboard")
 		.log( "activemq:topic:vxf.onboard for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
@@ -180,12 +187,21 @@ public class MANORouteBuilder  extends RouteBuilder{
         	.log("offboard failed with exception ${body}")
         .end();
 		
-		from("seda:vxf.onboard.success?multipleConsumers=true")
-		.marshal().json( JsonLibrary.Jackson, VxFOnBoardedDescriptor.class, true)
-		.convertBodyTo( String.class )
-		.to( "activemq:topic:vxf.onboard.success" );
-				
+		
+		from("activemq:topic:vxf.metadata.retrieve")
+		.log("activemq:topic:vxf.metadata.retrieve")
+		.choice()
+        .when(header("OSMType").isEqualTo("OSMvFIVE"))
+        	.bean(aMANOController, "mapOSM5VNFD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvSEVEN"))
+        	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
+
+		from("activemq:topic:ns.metadata.retrieve")
+		.log("activemq:topic:ns.metadata.retrieve")
+		.choice()
+        .when(header("OSMType").isEqualTo("OSMvFIVE"))
+        	.bean(aMANOController, "mapOSM5NSD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvSEVEN"))
+        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");				
 	}
-
-
 }

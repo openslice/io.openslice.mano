@@ -284,6 +284,32 @@ public class MANOClient {
 		return vxfm;	
 	}
 
+	public VxFMetadata getVxFByName(String name) {
+		String ret = template.requestBody( "activemq:queue:getVxFByName", name, String.class);
+		logger.info("Message Received from AMQ:"+ret);
+		VxFMetadata vxfm = null;
+		// Map object to ExperimentMetadata
+		try {
+			// Map object to ExperimentMetadata
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:"+ret.toString());
+			vxfm = mapper.readValue(ret, VxFMetadata.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return vxfm;	
+	}
+	
 	public ExperimentMetadata getNSDById(long id) {
 		String ret = template.requestBody( "activemq:queue:getNSDByID", id, String.class);
 		logger.info("Message Received from AMQ:"+ret);

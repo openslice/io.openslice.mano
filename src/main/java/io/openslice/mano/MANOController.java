@@ -21,13 +21,22 @@
 
 package io.openslice.mano;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.project.nsd.catalog.Nsd;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.base.rev170228.vnfd.descriptor.Vdu;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.rev170228.vnfd.catalog.Vnfd;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +45,18 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import OSM5Util.OSM5ArchiveExtractor.OSM5NSExtractor;
+import OSM5Util.OSM5ArchiveExtractor.OSM5VNFDExtractor;
+import OSM5Util.OSM5NSReq.OSM5NSRequirements;
+import OSM5Util.OSM5VNFReq.OSM5VNFRequirements;
+import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
+import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
+import OSM7Util.OSM7NSReq.OSM7NSRequirements;
+import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+import io.openslice.model.ConstituentVxF;
 //import OSM5NBIClient.OSM5Client;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.DeploymentDescriptorStatus;
@@ -43,8 +64,12 @@ import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
+import io.openslice.model.VFImage;
+import io.openslice.model.ValidationStatus;
+import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
 import io.openslice.sol005nbi.OSMClient;
+import io.openslice.sol005nbi.OSMUtil.OSMVNFDExtractor;
 import io.openslice.centrallog.client.*;
 
 /**
@@ -125,7 +150,7 @@ public class MANOController {
 				
 		String manoVersion = vxfobds.getObMANOprovider().getSupportedMANOplatform().getName();
 		// OSM5 START
-		//if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			OSMClient osmClient = null;
 			try {
 				//osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
@@ -228,7 +253,7 @@ public class MANOController {
 		// TODO Auto-generated method stub
 		ResponseEntity<String> response = null;
 		// OSM5 START
-		//if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if (obd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			String vnfd_id = obd.getDeployId();
 			String manoVersion=obd.getObMANOprovider().getSupportedMANOplatform().getName();
 			OSMClient osmClient = null;			
@@ -285,7 +310,7 @@ public class MANOController {
 		uexpobds.setExperiment(em);
 	
 			// OSM5 - START
-			//if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+			//if (uexpobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			String manoVersion = uexpobds.getObMANOprovider().getSupportedMANOplatform().getName();
 			OSMClient osmClient = null;
 			try {
@@ -376,7 +401,7 @@ public class MANOController {
 	ResponseEntity<String> response = null;
 	
 	// OSM5 START
-	//if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+	//if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 		String nsd_id = uexpobd.getDeployId();
 		String manoVersion = uexpobd.getObMANOprovider().getSupportedMANOplatform().getName();
 		OSMClient osmClient = null;			
@@ -487,7 +512,7 @@ public class MANOController {
 					MANOprovider sm = aMANOClient.getMANOproviderByID( tmp_MANOprovider_id );
 					String manoVersion = sm.getSupportedMANOplatform().getName();
 					//OSM5 - START
-					//if (sm.getSupportedMANOplatform().getName().equals("OSM FIVE")) {						
+					//if (sm.getSupportedMANOplatform().getName().equals("OSMvFIVE")) {						
 						if (osmClient == null || !osmClient.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
 							try
 							{
@@ -665,7 +690,7 @@ public class MANOController {
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);		
 		// OSM5 - START
 		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
-		//if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if ( tmp.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
 			OSMClient osmClient = null;
 			try {
@@ -767,7 +792,7 @@ public class MANOController {
 		
 		
 		// OSM5 START
-		//if ( getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName().equals("OSM FIVE")) {
+		//if ( getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			 //deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATING ||			
 			logger.info("Current status change before termination is :"+deploymentdescriptor.getStatus());
 			if( deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.INSTANTIATING || deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.RUNNING || deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED )
@@ -853,7 +878,7 @@ public class MANOController {
 			aMANOplatform = "UNKNOWN";
 		}							
 		// OSM5 START
-		//if ( aMANOplatform.equals("OSM FIVE")) {
+		//if ( aMANOplatform.equals("OSMvFIVE")) {
 		if(OSMClientFactory.isOSMVersionSupported(aMANOplatform))
 		{
 			logger.info("Descriptor targets an "+aMANOplatform+" deploymentdescriptorid: " + deploymentdescriptorid);		
@@ -958,5 +983,347 @@ public class MANOController {
 		}
 		// OSM5 END
 	}
+	
+//=====================
+	
+	public String mapOSM5VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		VxFMetadata vxfMetadata = this.mapOSM5VNFD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}	
+	
+	public String mapOSM5NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		ExperimentMetadata vxfMetadata = this.mapOSM5NSD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}
+
+	public String mapOSM7VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		VxFMetadata vxfMetadata = this.mapOSM7VNFD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}
+
+	public String mapOSM7NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		ExperimentMetadata vxfMetadata = this.mapOSM7NSD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}
+
+
+	public ExperimentMetadata mapOSM5NSD2Product(String yamlFile)
+	{
+		ExperimentMetadata prod = new ExperimentMetadata();
+		
+		// Get the nsd object out of the file info
+		osm5.ns.yang.nfvo.nsd.rev170228.nsd.catalog.Nsd ns;
+		try {
+			ns = OSM5NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
+			
+			prod.setName(ns.getAddedId());
+			prod.setVersion(ns.getVersion());
+			prod.setVendor(ns.getVendor());
+			prod.setShortDescription(ns.getName());
+			prod.setLongDescription(ns.getDescription());
+
+			for (osm5.ns.yang.nfvo.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd v : ns.getConstituentVnfd()) {
+				ConstituentVxF cvxf = new ConstituentVxF();
+				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex())); 
+				cvxf.setVnfdidRef(v.getVnfdIdRef());				
+				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName(v.getVnfdIdRef());
+				cvxf.setVxfref(vxf);
+				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
+			}
+
+			// Get NS Requirements from the nsd			
+			OSM5NSRequirements vr = new OSM5NSRequirements(ns);
+			// Store the requirements in HTML			
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file			
+			prod.setDescriptor(yamlFile);
+			prod.setIconsrc(ns.getLogo());									
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prod;	
+	}
+	
+	public ExperimentMetadata mapOSM7NSD2Product(String yamlFile)
+	{
+		ExperimentMetadata prod = new ExperimentMetadata();
+		
+		// Get the nsd object out of the file info
+		Nsd ns;
+		try {
+			ns = OSM7NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
+			
+			prod.setName(ns.getName());
+			prod.setVersion(ns.getVersion());
+			prod.setVendor(ns.getVendor());
+			prod.setShortDescription(ns.getName());
+			prod.setLongDescription(ns.getDescription());
+
+			for (ConstituentVnfd v : ns.getConstituentVnfd()) {
+				ConstituentVxF cvxf = new ConstituentVxF();
+				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex())); 
+				cvxf.setVnfdidRef((String)v.getVnfdIdRef());				
+				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String)v.getVnfdIdRef());
+				cvxf.setVxfref(vxf);
+				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
+			}
+
+			// Get NS Requirements from the nsd			
+			OSM7NSRequirements vr = new OSM7NSRequirements(ns);
+			// Store the requirements in HTML			
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file			
+			prod.setDescriptor(yamlFile);
+			prod.setIconsrc(ns.getLogo());									
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prod;	
+	}
+	
+	public VxFMetadata mapOSM5VNFD2Product(String yamlFile)
+	{
+		VxFMetadata prod = new VxFMetadata();
+		// Get the vnfd object out of the file info
+		osm5.ns.yang.nfvo.vnfd.rev170228.vnfd.catalog.Vnfd vnfd;
+		try {
+			vnfd = OSM5VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
+			// Get the name for the db							
+			prod.setName(vnfd.getAddedId());
+			prod.setVersion(vnfd.getVersion());
+			prod.setVendor(vnfd.getVendor());
+			prod.setShortDescription(vnfd.getName());
+			prod.setLongDescription(vnfd.getDescription());
+			
+			((VxFMetadata) prod).setValidationStatus( ValidationStatus.UNDER_REVIEW  );
+			((VxFMetadata) prod).getVfimagesVDU().clear();//clear previous referenced images
+			for (osm5.ns.riftware._1._0.vnfd.base.rev170228.vnfd.descriptor.Vdu vdu : vnfd.getVdu()) {
+				String imageName = vdu.getImage();
+				if ( ( imageName != null) && (!imageName.equals("")) ){
+					VFImage sm  = new VFImage();
+					sm.setName( imageName );
+					((VxFMetadata) prod).getVfimagesVDU().add( sm );					
+				}
+			}			
+			
+			// Get VNF Requirements from the vnfd
+			OSM5VNFRequirements vr = new OSM5VNFRequirements(vnfd);
+			// Store the requirements in HTML
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file
+			prod.setDescriptor(yamlFile);
+			prod.setIconsrc(vnfd.getLogo());			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prod;
+	}
+		
+	public VxFMetadata mapOSM7VNFD2Product(String yamlFile)
+	{
+		VxFMetadata prod = new VxFMetadata();
+		// Get the vnfd object out of the file info
+		Vnfd vnfd;
+		try {
+			vnfd = OSM7VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
+			// Get the name for the db							
+			prod.setName(vnfd.getName());
+			prod.setVersion(vnfd.getVersion());
+			prod.setVendor(vnfd.getVendor());
+			prod.setShortDescription(vnfd.getName());
+			prod.setLongDescription(vnfd.getDescription());
+			
+			((VxFMetadata) prod).setValidationStatus( ValidationStatus.UNDER_REVIEW  );
+			((VxFMetadata) prod).getVfimagesVDU().clear();//clear previous referenced images
+			for (Vdu vdu : vnfd.getVdu()) {
+				String imageName = vdu.getImage();
+				if ( ( imageName != null) && (!imageName.equals("")) ){
+					VFImage sm  = new VFImage();
+					sm.setName( imageName );
+					((VxFMetadata) prod).getVfimagesVDU().add( sm );					
+				}
+			}			
+			
+			// Get VNF Requirements from the vnfd
+			OSM7VNFRequirements vr = new OSM7VNFRequirements(vnfd);
+			// Store the requirements in HTML
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file
+			prod.setDescriptor(yamlFile);
+			
+			prod.setIconsrc(vnfd.getLogo());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prod;
+	}	
+
+//	public static VxFMetadata mapOSM5VNFD2Product(VxFMetadata aVxFMetadata)
+//	{
+//		VxFMetadata prod = new VxFMetadata();
+//		// Create a vnfExtractor Object for the OSMvFIVE file 
+//		OSM5VNFDExtractor vnfExtract = new OSM5VNFDExtractor(new File(aVxFMetadata.getPackageLocation()));
+//		// Get the vnfd object out of the file info
+//		osm5.ns.yang.nfvo.vnfd.rev170228.vnfd.catalog.Vnfd vnfd;
+//		try {
+//			vnfd = vnfExtract.extractVnfdDescriptor();
+//			// Get the name for the db							
+//			prod.setName(vnfd.getAddedId());
+//			prod.setVersion(vnfd.getVersion());
+//			prod.setVendor(vnfd.getVendor());
+//			prod.setShortDescription(vnfd.getName());
+//			prod.setLongDescription(vnfd.getDescription());
+//			
+//			((VxFMetadata) prod).setValidationStatus( ValidationStatus.UNDER_REVIEW  );
+//			((VxFMetadata) prod).getVfimagesVDU().clear();//clear previous referenced images
+//			for (osm5.ns.riftware._1._0.vnfd.base.rev170228.vnfd.descriptor.Vdu vdu : vnfd.getVdu()) {
+//				String imageName = vdu.getImage();
+//				if ( ( imageName != null) && (!imageName.equals("")) ){
+//					VFImage sm  = new VFImage();
+//					sm.setName( imageName );
+//					((VxFMetadata) prod).getVfimagesVDU().add( sm );					
+//				}
+//			}			
+//			
+//			// Get VNF Requirements from the vnfd
+//			OSM5VNFRequirements vr = new OSM5VNFRequirements(vnfd);
+//			// Store the requirements in HTML
+//			prod.setDescriptorHTML(vr.toHTML());
+//			// Store the YAML file
+//			prod.setDescriptor(vnfExtract.getDescriptorYAMLfile());
+//			
+//			prod.setIconsrc(vnfd.getLogo());			
+//			//// If we got an IconfilePath file from/through the vnfExtractor
+//			//if (vnfExtract.getIconfilePath() != null) {
+//			//	String imageFileNamePosted = vnfd.getLogo();
+//			//	// If the name is not empty
+//			//	if (!imageFileNamePosted.equals("")) {
+//			//		String imgfile = AttachmentUtil.saveFile(vnfExtract.getIconfilePath(),
+//			//				METADATADIR + prod.getUuid() + File.separator + imageFileNamePosted);
+//			//		logger.info("imgfile saved to = " + imgfile);
+//			//		prod.setIconsrc( endpointUrl.replace("http:", "") + "/images/" + prod.getUuid()
+//			//				+ "/" + imageFileNamePosted);
+//			//	}
+//			//}
+//			//*************LOAD THE Product Object from the VNFD Descriptor END************************************
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+//		return prod;
+//	}
+//	
+//	public static VxFMetadata mapOSM7VNFD2Product(VxFMetadata aVxFMetadata)
+//	{			
+//		//VxFMetadata prod = new VxFMetadata();
+//		// Create a vnfExtractor Object for the OSMvSEVEN file 
+//		OSM7VNFDExtractor vnfExtract = new OSM7VNFDExtractor(aVxFMetadata.getPackageLocation());
+//		// Get the vnfd object out of the file info
+//		Vnfd vnfd;
+//		try {
+//			vnfd = vnfExtract.extractVnfdDescriptor();
+//			// Get the name for the db							
+//			aVxFMetadata.setName(vnfd.getName());
+//			aVxFMetadata.setVersion(vnfd.getVersion());
+//			aVxFMetadata.setVendor(vnfd.getVendor());
+//			aVxFMetadata.setShortDescription(vnfd.getName());
+//			aVxFMetadata.setLongDescription(vnfd.getDescription());
+//			
+//			aVxFMetadata.setValidationStatus( ValidationStatus.UNDER_REVIEW  );
+//			aVxFMetadata.getVfimagesVDU().clear();//clear previous referenced images
+//			for (Vdu vdu : vnfd.getVdu()) {
+//				String imageName = vdu.getImage();
+//				if ( ( imageName != null) && (!imageName.equals("")) ){
+//					VFImage sm = new VFImage();
+//					sm.setName( imageName );
+//					((VxFMetadata) aVxFMetadata).getVfimagesVDU().add( sm );
+//				}
+//			}			
+//			
+//			// Get VNF Requirements from the vnfd
+//			OSM7VNFRequirements vr = new OSM7VNFRequirements(vnfd);
+//			// Store the requirements in HTML
+//			aVxFMetadata.setDescriptorHTML(vr.toHTML());
+//			// Store the YAML file
+//			aVxFMetadata.setDescriptor(vnfExtract.getDescriptorYAMLfile());
+//			
+//			aVxFMetadata.setIconsrc(vnfd.getLogo());
+//			
+//			//// If we got an IconfilePath file from/through the vnfExtractor
+//			//if (vnfExtract.getIconfilePath() != null) {
+//			//	String imageFileNamePosted = vnfd.getLogo();
+//			//	logger.info("image = " + imageFileNamePosted);
+//			//	// If the name is not empty
+//			//	if (!imageFileNamePosted.equals("")) {
+//			//		String imgfile = AttachmentUtil.saveFile(vnfExtract.getIconfilePath(),
+//			//				METADATADIR + prod.getUuid() + File.separator + imageFileNamePosted);
+//			//		logger.info("imgfile saved to = " + imgfile);
+//			//		prod.setIconsrc( endpointUrl.replace("http:", "") + "/images/" + prod.getUuid()
+//			//				+ "/" + imageFileNamePosted);
+//			//	}
+//			//}
+//			//*************LOAD THE Product Object from the VNFD Descriptor END************************************
+//		} catch (IOException e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}				
+//		return aVxFMetadata;
+//	}
+//	
+//	public static String mapOSM5VNFD2ProductEagerDataJson(VxFMetadata aVxFMetadata) throws JsonProcessingException 
+//	{
+//		VxFMetadata vxfMetadata = OSMClientFactory.mapOSM5VNFD2Product(aVxFMetadata);
+//		ObjectMapper mapper = new ObjectMapper();		
+//		String res = mapper.writeValueAsString( vxfMetadata );
+//		
+//		return res;		
+//	}
+//
+//	public static String mapOSM7VNFD2ProductEagerDataJson(VxFMetadata aVxFMetadata) throws JsonProcessingException 
+//	{
+//		VxFMetadata vxfMetadata = OSMClientFactory.mapOSM7VNFD2Product(aVxFMetadata);
+//		ObjectMapper mapper = new ObjectMapper();		
+//		String res = mapper.writeValueAsString( vxfMetadata );
+//		
+//		return res;		
+//	}
+//	
+//	public static String mapOSMVNFD2ProductEagerDataJson(VxFMetadata aVxFMetadata) throws JsonProcessingException 
+//	{
+//		VxFMetadata vxfMetadata = null;
+//		if(aVxFMetadata.getPackagingFormat().equals("OSMvFIVE"))
+//		{
+//			vxfMetadata = OSMClientFactory.mapOSM5VNFD2Product(aVxFMetadata);
+//		}
+//		else if(aVxFMetadata.getPackagingFormat().equals("OSM SEVEN"))
+//		{
+//			vxfMetadata = OSMClientFactory.mapOSM7VNFD2Product(aVxFMetadata);			
+//		}
+//		ObjectMapper mapper = new ObjectMapper();		
+//		String res = mapper.writeValueAsString( vxfMetadata );
+//		
+//		return res;		
+//	}
+//	
 	
 }

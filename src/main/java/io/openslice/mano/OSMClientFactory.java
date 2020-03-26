@@ -1,34 +1,81 @@
 package io.openslice.mano;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Date;
+import java.util.List;
+import java.util.UUID;
+
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.project.nsd.catalog.Nsd;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.base.rev170228.vnfd.descriptor.Vdu;
+import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.rev170228.vnfd.catalog.Vnfd;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.HttpStatusCodeException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
+
 import OSM5NBIClient.OSM5Client;
+import OSM5Util.OSM5ArchiveExtractor.OSM5NSExtractor;
+import OSM5Util.OSM5ArchiveExtractor.OSM5VNFDExtractor;
+import OSM5Util.OSM5NSReq.OSM5NSRequirements;
+import OSM5Util.OSM5VNFReq.OSM5VNFRequirements;
 import OSM7NBIClient.OSM7Client;
+import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
+import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
+import OSM7Util.OSM7NSReq.OSM7NSRequirements;
+import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+import io.openslice.model.ConstituentVxF;
+import io.openslice.model.DeploymentDescriptor;
+import io.openslice.model.ExperimentMetadata;
+import io.openslice.model.PortalUser;
+import io.openslice.model.Product;
+import io.openslice.model.VFImage;
+import io.openslice.model.ValidationStatus;
+import io.openslice.model.VxFMetadata;
 import io.openslice.sol005nbi.OSMClient;
+import io.openslice.sol005nbi.OSMUtil.OSMNSExtractor;
+import io.openslice.sol005nbi.OSMUtil.OSMVNFDExtractor;
 
+@Configuration
 public class OSMClientFactory {
-
+	
 	public static OSMClient getOSMClient(String type,String apiEndpoint, String username, String password, String project_id) throws HttpStatusCodeException
 	{
 		switch(type)
 		{
-			case "OSM FIVE":
+			case "OSMvFIVE":
 				return new OSM5Client(apiEndpoint,username,password,project_id);
-			case "OSM SEVEN":
+			case "OSMvSEVEN":
 				return new OSM7Client(apiEndpoint,username,password,project_id);
 		}
 		return null;
 	}
 	
+	public static OSMNSExtractor getOSMNSExtractor(String type,File NSDescriptorFile)
+	{
+		switch(type)
+		{
+			case "OSMvFIVE":
+				return new OSM5NSExtractor(NSDescriptorFile);
+			case "OSMvSEVEN":
+				return new OSM7NSExtractor(NSDescriptorFile);
+		}
+		return null;
+	}
+		
 	public static Boolean isOSMVersionSupported(String type)
 	{
 		switch(type)
 		{
-			case "OSM FIVE":
+			case "OSMvFIVE":
 				return true;
-			case "OSM SEVEN":
+			case "OSMvSEVEN":
 				return true;				
 		}
 		return false;
-	}
+	}	
 }
