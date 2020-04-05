@@ -721,11 +721,23 @@ public class MANOController {
 				//aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
 				return;
 			}
-
-			NSCreateInstanceRequestPayload nscreateinstancerequestpayload = new NSCreateInstanceRequestPayload(deploymentdescriptor);
+			NSCreateInstanceRequestPayload nscreateinstancerequestpayload = null;
+			String nscreateinstancerequestpayload_json = null;
+			if(deploymentdescriptor.getInstantiationconfig() != null)
+			{
+				nscreateinstancerequestpayload_json = deploymentdescriptor.getInstantiationconfig();
+				logger.info("Found and parsed instantiation configuration " + nscreateinstancerequestpayload_json);
+			}
+			else
+			{
+				logger.info("Could not find or parse instantiation configuration from user. Getting default configuration");
+				nscreateinstancerequestpayload = new NSCreateInstanceRequestPayload(deploymentdescriptor);
+				nscreateinstancerequestpayload_json = nscreateinstancerequestpayload.toJSON();
+			}
+			
 			// Get Experiment ID and VIM ID and create NS Instance.
-			logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload.toJSON());
-			ResponseEntity<String> ns_instance_creation_entity = osmClient.createNSInstance(nscreateinstancerequestpayload.toJSON());
+			logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
+			ResponseEntity<String> ns_instance_creation_entity = osmClient.createNSInstance(nscreateinstancerequestpayload_json);
 			// The NS Instance ID is set
 
 			// NS instance creation
@@ -750,12 +762,29 @@ public class MANOController {
 				String nsd_instance_id = ns_instance_creation_entity_json_obj.getString("id");
 				deploymentdescriptor.setInstanceId(nsd_instance_id);
 				// Instantiate NS Instance
-				NSInstantiateInstanceRequestPayload nsrequestpayload = new NSInstantiateInstanceRequestPayload(deploymentdescriptor);
-				logger.info("NS Instantiation payload : " + nsrequestpayload.toJSON());
+//				NSInstantiateInstanceRequestPayload nsrequestpayload = new NSInstantiateInstanceRequestPayload(deploymentdescriptor);
+//				logger.info("NS Instantiation payload : " + nsrequestpayload.toJSON());
+
+
+				NSInstantiateInstanceRequestPayload nsrequestpayload = null;
+				String nsrequestpayload_json = null;
+				if(deploymentdescriptor.getInstantiationconfig() != null)
+				{
+					nsrequestpayload_json = deploymentdescriptor.getInstantiationconfig();
+					logger.info("Found and parsed instantiation configuration "+nsrequestpayload_json);
+				}
+				else
+				{
+					logger.info("Could not find or parse instantiation configuration from user. Getting default configuration");
+					nsrequestpayload = new NSInstantiateInstanceRequestPayload(deploymentdescriptor);
+					nsrequestpayload_json = nscreateinstancerequestpayload.toJSON();
+				}
+				// Get Experiment ID and VIM ID and create NS Instance.
+				logger.info("NS Instance creation payload : " + nsrequestpayload_json);
+				
 				// Here we need the feedback
-				// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
-				// nsrequestpayload.toJSON());
-				ResponseEntity<String> instantiate_ns_instance_entity = osmClient.instantiateNSInstance(nsd_instance_id, nsrequestpayload.toJSON());
+				// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id, nsrequestpayload.toJSON());
+				ResponseEntity<String> instantiate_ns_instance_entity = osmClient.instantiateNSInstance(nsd_instance_id, nsrequestpayload_json);
 				if (instantiate_ns_instance_entity == null || instantiate_ns_instance_entity.getStatusCode().is4xxClientError() || instantiate_ns_instance_entity.getStatusCode().is5xxServerError()) {
 					// NS Instantiation failed
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);

@@ -26,6 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -41,6 +42,8 @@ public class NSInstantiateInstanceRequestPayload {
 	public String nsName;
 	public String vimAccountId;
 	public String nsdId;
+	public List<VnF> vnf = new ArrayList<>();	
+	//private List<Vld> vld = null; //new ArrayList<>();	
 
 	class VnF {
 		@JsonProperty("member-vnf-index")
@@ -49,15 +52,35 @@ public class NSInstantiateInstanceRequestPayload {
 		public String vimAccount;
 	}
 
-	class Vld {
-		public String name;
+	class Vld
+	{
+		@JsonProperty("name")
+		private String name;
 		@JsonProperty("vim-network-name")
-		public LinkedHashMap<String, String> vimNetworkName = new LinkedHashMap<>();
+		private LinkedHashMap<String,String> vimNetworkName = new LinkedHashMap<>();
+
+		public String getName() {
+			return name;
+		}
+		public void setName(String name) {
+			this.name = name;
+		}
+		public LinkedHashMap<String, String> getVimNetworkName() {
+			return vimNetworkName;
+		}
+		public void setVimNetworkName(LinkedHashMap<String, String> vimNetworkName) {
+			this.vimNetworkName = vimNetworkName;
+		}
 	}
 
-	public List<VnF> vnf = new ArrayList<>();
-	// public List<Vld> vld = new ArrayList<>();
-
+//	public List<Vld> getVld() {
+//		return vld;
+//	}
+//
+//	public void setVld(List<Vld> vld) {
+//		this.vld = vld;
+//	}
+	
 	public NSInstantiateInstanceRequestPayload(DeploymentDescriptor deploymentdescriptor) {
 		this.nsName = deploymentdescriptor.getName();
 		this.vimAccountId = deploymentdescriptor.getInfrastructureForAll().getVIMid();
@@ -74,11 +97,11 @@ public class NSInstantiateInstanceRequestPayload {
 			VnF vnf_tmp = new VnF();
 			vnf_tmp.memberVnFIndex = count.toString();
 			vnf_tmp.vimAccount = tmp.getInfrastructure().getVIMid();
-			this.vnf.add(vnf_tmp);
+			this.vnf.add(vnf_tmp);			
 			count++;
-		}
+		}	
 	}
-
+	
 	private ExperimentOnBoardDescriptor getExperimOBD(DeploymentDescriptor deployment_tmp) {
 
 		for (ExperimentOnBoardDescriptor e : deployment_tmp.getExperimentFullDetails()
@@ -89,15 +112,18 @@ public class NSInstantiateInstanceRequestPayload {
 		return null;
 	}
 
-	public String toJSON() {
-		String jsonInString = null;
+	public String toJSON()
+	{
+		String jsonInString=null;
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(Include.NON_NULL);
 		try {
-			jsonInString = mapper.writeValueAsString(this);
+			jsonInString = mapper.writerWithDefaultPrettyPrinter().writeValueAsString(this);
 		} catch (JsonProcessingException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		}	
 		return jsonInString;
 	}
+	
 }
