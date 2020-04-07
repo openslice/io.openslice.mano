@@ -153,9 +153,8 @@ public class MANOController {
 		//if (vxfobds.getObMANOprovider().getSupportedMANOplatform().getName().equals("OSMvFIVE")) {
 			OSMClient osmClient = null;
 			try {
-				//osm5Client = new OSM5Client(vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
+				osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), vxfobds.getObMANOprovider().getProject());
 				//MANOStatus.setOsm5CommunicationStatusActive(null);
-				osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(Exception e) 
 			{
@@ -258,9 +257,8 @@ public class MANOController {
 			String manoVersion=obd.getObMANOprovider().getSupportedMANOplatform().getName();
 			OSMClient osmClient = null;			
 			try {
-				//osm5Client = new OSM5Client(obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
+				osmClient = OSMClientFactory.getOSMClient(manoVersion , obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), obd.getObMANOprovider().getProject());
 				//MANOStatus.setOsm5CommunicationStatusActive(null);								
-				osmClient = OSMClientFactory.getOSMClient(manoVersion , obd.getObMANOprovider().getApiEndpoint(), obd.getObMANOprovider().getUsername(), obd.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(HttpStatusCodeException e) 
 			{
@@ -314,9 +312,8 @@ public class MANOController {
 			String manoVersion = uexpobds.getObMANOprovider().getSupportedMANOplatform().getName();
 			OSMClient osmClient = null;
 			try {
-				//osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+				osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), uexpobd.getObMANOprovider().getProject());
 				//MANOStatus.setOsm5CommunicationStatusActive(null);								
-				osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 			}
 		    catch(Exception e) 
 			{
@@ -406,9 +403,8 @@ public class MANOController {
 		String manoVersion = uexpobd.getObMANOprovider().getSupportedMANOplatform().getName();
 		OSMClient osmClient = null;			
 		try {
-			//osm5Client = new OSM5Client(uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
+			osmClient = OSMClientFactory.getOSMClient(manoVersion, uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), uexpobd.getObMANOprovider().getProject());
 			//MANOStatus.setOsm5CommunicationStatusActive(null);								
-			osmClient = OSMClientFactory.getOSMClient(manoVersion, uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), "admin");
 		}
 	    catch(HttpStatusCodeException e) 
 		{
@@ -516,9 +512,8 @@ public class MANOController {
 						if (osmClient == null || !osmClient.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
 							try
 							{
-								//osm5Client = new OSM5Client(sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), "admin");							
-	//							MANOStatus.setOsm5CommunicationStatusActive(null);
-								osmClient = OSMClientFactory.getOSMClient(manoVersion, sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), "admin");								
+								osmClient = OSMClientFactory.getOSMClient(manoVersion, sm.getApiEndpoint(), sm.getUsername(), sm.getPassword(), sm.getProject());								
+								//							MANOStatus.setOsm5CommunicationStatusActive(null);
 							}
 							catch(Exception e)
 							{
@@ -694,18 +689,13 @@ public class MANOController {
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
 			OSMClient osmClient = null;
 			try {
-					// osm5Client = new OSM5Client(
-					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
-					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
-					//		getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
-					//		"admin");
-					//MANOStatus.setOsm5CommunicationStatusActive(null);
 				logger.debug("Connecting to "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" MANO Client");
 				osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getName(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
 						getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
-						"admin");
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getProject());
+				//MANOStatus.setOsm5CommunicationStatusActive(null);
 			}
 			catch(Exception e)
 			{
@@ -829,16 +819,11 @@ public class MANOController {
 				try
 				{
 					MANOprovider tmpMANOProvider = getExperimOBD(deploymentdescriptor).getObMANOprovider();
-					//OSM5Client osm5Client = new OSM5Client(
-					//		tmpMANOProvider.getApiEndpoint(),
-					//		tmpMANOProvider.getUsername(),
-					//		tmpMANOProvider.getPassword(),
-					//		"admin");
 					OSMClient osmClient = OSMClientFactory.getOSMClient(getExperimOBD(deploymentdescriptor).getObMANOprovider().getSupportedMANOplatform().getName(),
 							tmpMANOProvider.getApiEndpoint(),
 							tmpMANOProvider.getUsername(),
 							tmpMANOProvider.getPassword(),
-							"admin");												 
+							tmpMANOProvider.getProject());												 
 					
 					//MANOStatus.setOsm5CommunicationStatusActive(null);				
 //					JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(deploymentdescriptor.getInstanceId());
@@ -932,16 +917,11 @@ public class MANOController {
 			OSMClient osmClient = null;
 			try
 			{
-					// osm5Client = new OSM5Client(
-					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
-					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
-					//		 getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
-					//		"admin");	
 					osmClient = OSMClientFactory.getOSMClient(aMANOplatform, 							
 							getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
 							getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
 							getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
-							"admin");												 
+							getExperimOBD(deploymentdescriptor).getObMANOprovider().getProject());												 
 					//MANOStatus.setOsm5CommunicationStatusActive(null);													
 			}
 			catch(Exception e)
