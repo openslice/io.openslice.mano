@@ -121,6 +121,10 @@ public class MANOController {
 //		return new MANOController();
 //	}
 
+	public void onBoardVxFToMANOProviderByFile( ) throws Exception {
+		
+	}
+
 	/**
 	 * onBoard a VNF to MANO Provider, as described by this descriptor
 	 * 
@@ -276,6 +280,10 @@ public class MANOController {
 			response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
 		}
 		return response;
+	}
+
+	public void onBoardNSDToMANOProviderByFile( ) throws Exception {
+		
 	}
 	
 	public void onBoardNSDToMANOProvider( ExperimentOnBoardDescriptor uexpobd ) throws Exception {
@@ -524,6 +532,7 @@ public class MANOController {
 							}
 						}
 						JSONObject ns_instance_info = osmClient.getNSInstanceInfo(deployment_tmp.getInstanceId());
+						//JSONObject ns_instance_content_info = osmClient.getNSInstanceContentInfo(deployment_tmp.getInstanceId());
 						// If the no nsd with the specific id is found, mark the instance as faile to delete.
 						if(ns_instance_info == null)
 						{
@@ -539,9 +548,15 @@ public class MANOController {
 						else 
 						{
 							try {
-								logger.info(ns_instance_info.toString());
+								//String nsr_string = JSONObject.quote(ns_instance_info.toString());
+								deployment_tmp.setNsr(ns_instance_info.toString());
+								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+								logger.info("Setting NSR Info:"+deployment_tmp.getNsr());
 								if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING)
 								{
+									JSONObject ns_nslcm_details = osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+									deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());																		
+									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 									if(!deployment_tmp.getOperationalStatus().equals(ns_instance_info.getString("operational-status"))||!deployment_tmp.getConfigStatus().equals(ns_instance_info.getString("config-status"))||!deployment_tmp.getDetailedStatus().equals(ns_instance_info.getString("detailed-status").replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", "")))
 									{
 										logger.info("Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus());
@@ -583,6 +598,9 @@ public class MANOController {
 								if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
 										&& deployment_tmp.getOperationalStatus().toLowerCase().equals("running")) 
 								{
+									JSONObject ns_nslcm_details = osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+									deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());
+									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);									
 									deployment_tmp.setStatus(DeploymentDescriptorStatus.RUNNING);
 									logger.info("Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus());
 									CentralLogger.log( CLevel.INFO, "Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus(), compname);
@@ -790,6 +808,8 @@ public class MANOController {
 					aMANOClient.deploymentInstantiationFailed(deploymentdescriptor_final );
 				} else {
 					// NS Instantiation starts
+					JSONObject instantiate_ns_instance_entity_json_obj = new JSONObject(instantiate_ns_instance_entity.getBody());
+					deploymentdescriptor.setNsLcmOpOccId(instantiate_ns_instance_entity_json_obj.getString("id"));
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.INSTANTIATING);
 					CentralLogger.log( CLevel.INFO, "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus(), compname);
 					logger.info( "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());					

@@ -362,6 +362,33 @@ public class MANOClient {
 		return em;	
 	}
 	
+	private VxFOnBoardedDescriptor getVxFOnBoardedDescriptorById(long id)
+	{
+		String ret = template.requestBody( "activemq:queue:getVxFOBDByID", id, String.class);
+		logger.info("Message Received from AMQ:"+ret);
+		VxFOnBoardedDescriptor vxfobd = null;
+		// Map object to ExperimentMetadata
+		try {
+			// Map object to ExperimentMetadata
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:"+ret.toString());
+			vxfobd = mapper.readValue(ret, VxFOnBoardedDescriptor.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return vxfobd;			
+	}
+	
 	public VxFOnBoardedDescriptor updateVxFOnBoardedDescriptor(VxFOnBoardedDescriptor vxfobd2send)
 	{
 		// Serialize the received object

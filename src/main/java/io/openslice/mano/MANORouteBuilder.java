@@ -155,6 +155,12 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.bean( aMANOController, "onBoardVxFToMANOProvider" )
 		.to("log:DEBUG?showBody=true&showHeaders=true");
 		
+		from("activemq:topic:vxf.onboardbyfile")
+		.log( "activemq:topic:vxf.onboardbyfile for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
+		.bean( aMANOController, "onBoardVxFToMANOProviderByFile" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");
+		
 		from("activemq:topic:vxf.offboard")
 		.log( "activemq:topic:vxf.offboard for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
@@ -168,6 +174,12 @@ public class MANORouteBuilder  extends RouteBuilder{
         	.log("offboard failed with exception ${body}")
         .end();
 
+		from("activemq:topic:nsd.onboardbyfile")
+		.log( "activemq:topic:nsd.onboardbyfile for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.ExperimentOnBoardDescriptor.class, true)
+		.bean( aMANOController, "onBoardNSDToMANOProviderByFile" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");		
+		
 		from("activemq:topic:nsd.onboard")
 		.log( "activemq:topic:nsd.onboard for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.ExperimentOnBoardDescriptor.class, true)
