@@ -22,7 +22,15 @@
 package io.openslice.mano;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.RandomAccessFile;
 
+import javax.jms.BytesMessage;
+import javax.jms.JMSException;
+import javax.jms.Message;
+
+import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
@@ -33,7 +41,10 @@ import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
+
+import com.google.common.io.Files;
 
 import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
@@ -149,6 +160,8 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:vxf.onboard.success" );
 				
+				
+		
 		from("activemq:topic:vxf.onboard")
 		.log( "activemq:topic:vxf.onboard for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
@@ -216,4 +229,33 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");				
 	}
+	
+	@JmsListener(destination = "activemq:queue:onBoardVxFAdded")
+	public void receiveMessage(final Message aMessage) throws JMSException {
+
+		try {
+
+			if (aMessage instanceof ActiveMQBytesMessage) {
+				System.out.println("Received ActiveMQBytesMessage message");
+				String filename = aMessage.getStringProperty("fileName");
+				System.out.println("Received filename " + filename);
+				String outputfileName = Files.createTempDir() + File.separator +  filename;
+
+				ActiveMQBytesMessage bm = ((ActiveMQBytesMessage) aMessage);
+
+				File file = new File(outputfileName);
+				RandomAccessFile  accessFile = new RandomAccessFile(file, "rw");
+				accessFile.write(bm.getContent().getData());
+				accessFile.close();
+				System.out.println("Received filename saved at " + outputfileName);
+			}
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 }
