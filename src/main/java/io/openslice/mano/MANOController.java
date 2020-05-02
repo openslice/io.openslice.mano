@@ -56,6 +56,8 @@ import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
 import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+import io.openslice.model.CompositeExperimentOnBoardDescriptor;
+import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
 //import OSM5NBIClient.OSM5Client;
 import io.openslice.model.DeploymentDescriptor;
@@ -131,7 +133,7 @@ public class MANOController {
 	 * @param vxfobds
 	 * @throws Exception
 	 */
-	public void onBoardVxFToMANOProvider( VxFOnBoardedDescriptor vxfobd ) throws Exception {
+	public void onBoardVxFToMANOProviderByOBD( VxFOnBoardedDescriptor vxfobd ) throws Exception {
 		
 		vxfobd.setVxf(aMANOClient.getVxFById(vxfobd.getVxfid()));		
 		// Update the status and update the vxfobd
@@ -246,6 +248,226 @@ public class MANOController {
 		// OSM5 END
 	}
 
+	public void onBoardVxFToMANOProviderByCompositeObj( CompositeVxFOnBoardDescriptor compositeobd ) throws Exception {
+		
+		VxFOnBoardedDescriptor vxfobd = (VxFOnBoardedDescriptor)compositeobd.getObd();
+		byte[] allBytes = compositeobd.getAllBytes();
+		// Load the related VxFMetadata object
+		vxfobd.setVxf(aMANOClient.getVxFById(vxfobd.getVxfid()));		
+		// Update the status and update the vxfobd
+		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
+		// This is the Deployment ID for the portal
+		vxfobd.setDeployId(UUID.randomUUID().toString());
+		CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus(), compname);
+		logger.info("Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus());
+		// Set MANO Provider VxF ID
+		vxfobd.setVxfMANOProviderID( vxfobd.getVxf().getName());
+		// Set onBoarding Date
+		vxfobd.setLastOnboarding(new Date());
+
+		VxFOnBoardedDescriptor vxfobds = aMANOClient.updateVxFOnBoardedDescriptor(vxfobd);
+		if (vxfobds == null) {
+			throw new Exception("Cannot load VxFOnBoardedDescriptor");
+		}
+		//Reload the vxf for the updated object.
+		vxfobds.setVxf(aMANOClient.getVxFById(vxfobds.getVxfid()));					
+				
+		String manoVersion = vxfobds.getObMANOprovider().getSupportedMANOplatform().getName();
+		OSMClient osmClient = null;
+		try {
+			osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), vxfobds.getObMANOprovider().getProject());
+			//MANOStatus.setOsm5CommunicationStatusActive(null);
+		}
+	    catch(Exception e) 
+		{
+			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");				
+			CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
+			
+			//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding action.");																	
+			// Set the reason of the failure
+			vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);
+			logger.error("Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());
+			
+			// ?? This should change. Either by an activemq call or we should certify upon Onboarding success.
+			// Uncertify if it failed OnBoarding.
+			vxfobds.getVxf().setCertified(false);
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			
+			//Send a message for OnBoarding Failure due to osm connection failure
+			aMANOClient.onBoardVxFFailed( vxfobds_final );				
+	        return ;
+		}						
+		
+		ResponseEntity<String> response = null;
+		response = osmClient.createVNFDPackage();
+		if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
+			logger.error("VNFD Package Creation failed.");
+			// Set status
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);										
+			// Set the reason of the failure
+			vxfobds.setFeedbackMessage(response.getBody().toString());
+			// Uncertify if it failed OnBoarding.
+			vxfobds.getVxf().setCertified(false);
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			//Send a message for OnBoarding Failure due to osm connection failure
+			aMANOClient.onBoardVxFFailed( vxfobds_final );
+			return;				
+		}
+		else
+		{
+			JSONObject obj = new JSONObject(response.getBody());
+			String vnfd_id = obj.getString("id");
+			logger.info(response.getStatusCode()+" replied. The new VNFD Package id is :" + vnfd_id);
+			response = osmClient.uploadVNFDPackageContent(vnfd_id, allBytes);
+			if (response == null || response.getStatusCode().is4xxClientError()
+					|| response.getStatusCode().is5xxServerError()) {
+				logger.error("Upload of VNFD Package Content failed. Deleting VNFD Package.");
+				// Delete the package from the OSM
+				osmClient.deleteVNFDPackage(vnfd_id);
+				// Set status
+				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);											
+				// Set the reason of the failure
+				vxfobds.setFeedbackMessage(response.getBody().toString());
+				// Uncertify if it failed OnBoarding.
+				vxfobds.getVxf().setCertified(false);
+				VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+				aMANOClient.onBoardVxFFailed( vxfobds_final );
+				return;
+			}
+
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);											
+			
+			vxfobds.setFeedbackMessage("OnBoarding Succeeded");
+			
+			// We select by design not to Certify upon OnBoarding but only on final version is determined.
+			// vxfobds.getVxf().setCertified(true);
+			
+			// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
+			vxfobds.setDeployId(vnfd_id);
+			// What should be the vxf Name. Something like cirros_vnfd.
+			vxfobds.setVxfMANOProviderID( vxfobd.getVxf().getName() );
+			// Set Onboarding date
+			vxfobds.setLastOnboarding(new Date());
+			// Save the changes to vxfobds
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			aMANOClient.onBoardVxFSucceded( vxfobds_final );				
+		}			
+	}
+
+	public void onBoardVxFToMANOProvider( VxFOnBoardedDescriptor vxfobd, byte[] allBytes ) throws Exception {
+		
+		// Load the related VxFMetadata object
+		vxfobd.setVxf(aMANOClient.getVxFById(vxfobd.getVxfid()));		
+		// Update the status and update the vxfobd
+		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
+		// This is the Deployment ID for the portal
+		vxfobd.setDeployId(UUID.randomUUID().toString());
+		CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus(), compname);
+		logger.info("Onboarding status change of VxF "+vxfobd.getVxf().getName()+" to "+vxfobd.getOnBoardingStatus());
+		// Set MANO Provider VxF ID
+		vxfobd.setVxfMANOProviderID( vxfobd.getVxf().getName());
+		// Set onBoarding Date
+		vxfobd.setLastOnboarding(new Date());
+
+		VxFOnBoardedDescriptor vxfobds = aMANOClient.updateVxFOnBoardedDescriptor(vxfobd);
+		if (vxfobds == null) {
+			throw new Exception("Cannot load VxFOnBoardedDescriptor");
+		}
+		//Reload the vxf for the updated object.
+		vxfobds.setVxf(aMANOClient.getVxFById(vxfobds.getVxfid()));					
+				
+		String manoVersion = vxfobds.getObMANOprovider().getSupportedMANOplatform().getName();
+		OSMClient osmClient = null;
+		try {
+			osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), vxfobds.getObMANOprovider().getProject());
+			//MANOStatus.setOsm5CommunicationStatusActive(null);
+		}
+	    catch(Exception e) 
+		{
+			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");				
+			CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
+			
+			//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding action.");																	
+			// Set the reason of the failure
+			vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);
+			logger.error("Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus());
+			
+			// ?? This should change. Either by an activemq call or we should certify upon Onboarding success.
+			// Uncertify if it failed OnBoarding.
+			vxfobds.getVxf().setCertified(false);
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			
+			//Send a message for OnBoarding Failure due to osm connection failure
+			aMANOClient.onBoardVxFFailed( vxfobds_final );				
+	        return ;
+		}						
+		
+		ResponseEntity<String> response = null;
+		response = osmClient.createVNFDPackage();
+		if (response == null || response.getStatusCode().is4xxClientError() || response.getStatusCode().is5xxServerError()) {
+			logger.error("VNFD Package Creation failed.");
+			// Set status
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);										
+			// Set the reason of the failure
+			vxfobds.setFeedbackMessage(response.getBody().toString());
+			// Uncertify if it failed OnBoarding.
+			vxfobds.getVxf().setCertified(false);
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			//Send a message for OnBoarding Failure due to osm connection failure
+			aMANOClient.onBoardVxFFailed( vxfobds_final );
+			return;				
+		}
+		else
+		{
+			JSONObject obj = new JSONObject(response.getBody());
+			String vnfd_id = obj.getString("id");
+			logger.info(response.getStatusCode()+" replied. The new VNFD Package id is :" + vnfd_id);
+			response = osmClient.uploadVNFDPackageContent(vnfd_id, allBytes);
+			if (response == null || response.getStatusCode().is4xxClientError()
+					|| response.getStatusCode().is5xxServerError()) {
+				logger.error("Upload of VNFD Package Content failed. Deleting VNFD Package.");
+				// Delete the package from the OSM
+				osmClient.deleteVNFDPackage(vnfd_id);
+				// Set status
+				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+				CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);											
+				// Set the reason of the failure
+				vxfobds.setFeedbackMessage(response.getBody().toString());
+				// Uncertify if it failed OnBoarding.
+				vxfobds.getVxf().setCertified(false);
+				VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+				aMANOClient.onBoardVxFFailed( vxfobds_final );
+				return;
+			}
+
+			vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+			CentralLogger.log( CLevel.INFO, "Onboarding status change of VxF "+vxfobds.getVxf().getName()+" to "+vxfobds.getOnBoardingStatus(), compname);											
+			
+			vxfobds.setFeedbackMessage("OnBoarding Succeeded");
+			
+			// We select by design not to Certify upon OnBoarding but only on final version is determined.
+			// vxfobds.getVxf().setCertified(true);
+			
+			// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
+			vxfobds.setDeployId(vnfd_id);
+			// What should be the vxf Name. Something like cirros_vnfd.
+			vxfobds.setVxfMANOProviderID( vxfobd.getVxf().getName() );
+			// Set Onboarding date
+			vxfobds.setLastOnboarding(new Date());
+			// Save the changes to vxfobds
+			VxFOnBoardedDescriptor vxfobds_final = aMANOClient.updateVxFOnBoardedDescriptor(vxfobds);
+			aMANOClient.onBoardVxFSucceded( vxfobds_final );				
+		}			
+	}
+	
 	/**
 	 * offBoard a VNF to MANO Provider, as described by this descriptor
 	 * 
@@ -284,6 +506,118 @@ public class MANOController {
 
 	public void onBoardNSDToMANOProviderByFile( ) throws Exception {
 		
+	}
+	
+	public void onBoardNSDToMANOProviderByCompositeObj(CompositeExperimentOnBoardDescriptor compexpobd) throws Exception {
+		
+		ExperimentOnBoardDescriptor uexpobd = compexpobd.getObd();
+		byte[] allBytes = compexpobd.getAllBytes();
+		
+		ExperimentMetadata em = uexpobd.getExperiment();
+		if (em == null) {
+			em = (ExperimentMetadata) aMANOClient.getNSDById(uexpobd.getExperimentid());
+		}
+		uexpobd.setExperiment(em);
+		uexpobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
+
+		// This is the Deployment ID for the portal
+		uexpobd.setDeployId(UUID.randomUUID().toString());
+		CentralLogger.log( CLevel.INFO, "Onboarding status change of Experiment "+uexpobd.getExperiment().getName()+" to "+uexpobd.getOnBoardingStatus(), compname);
+		logger.info("Onboarding status change of Experiment "+uexpobd.getExperiment().getName()+" to "+uexpobd.getOnBoardingStatus());
+
+		//uexpobd.setVxfMANOProviderID(em.getName()); // Possible Error. This probably needs to be
+		uexpobd.setExperimentMANOProviderID(em.getName());
+
+		uexpobd.setLastOnboarding(new Date());
+				
+		ExperimentOnBoardDescriptor uexpobds = aMANOClient.updateExperimentOnBoardDescriptor(uexpobd);
+		if (uexpobds == null) {
+			throw new Exception("Cannot load NSDOnBoardedDescriptor");
+		}
+		em = uexpobds.getExperiment();
+		if (em == null) {
+			em = (ExperimentMetadata) aMANOClient.getNSDById(uexpobd.getExperimentid());
+		}
+		uexpobds.setExperiment(em);
+	
+		String manoVersion = uexpobds.getObMANOprovider().getSupportedMANOplatform().getName();
+		OSMClient osmClient = null;
+		try {
+			osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), uexpobd.getObMANOprovider().getProject());
+			//MANOStatus.setOsm5CommunicationStatusActive(null);								
+		}
+	    catch(Exception e) 
+		{
+			logger.error("onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting action.");
+			CentralLogger.log( CLevel.ERROR, "onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting NSD Onboarding action.", compname);
+			logger.error("onBoardNSDFromMANOProvider, "+ manoVersion +" fails authentication. Aborting NSD Onboarding action.");
+			//MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD Onboarding action.");				
+			// Set the reason of the failure
+			uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
+			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.ERROR, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
+			logger.error("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
+			// Set Valid to false if it fails OnBoarding
+			uexpobds.getExperiment().setValid(false);
+			aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+			aMANOClient.onBoardNSDFailed( uexpobds );
+			return ;
+		}						
+		
+		ResponseEntity<String> response = null;
+		response = osmClient.createNSDPackage();
+		if (response == null || response.getStatusCode().is4xxClientError()
+				|| response.getStatusCode().is5xxServerError()) {
+			logger.error("Creation of NSD Package Content failed. Deleting NSD Package.");
+			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+			CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
+			// Set the reason of the failure
+			uexpobds.setFeedbackMessage(response.getBody().toString());
+			// Set Valid to false if it fails OnBoarding
+			uexpobds.getExperiment().setValid(false);
+			aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+			aMANOClient.onBoardNSDFailed( uexpobds );
+			return;				
+		}
+		else
+		{
+			JSONObject obj = new JSONObject(response.getBody());
+			String nsd_id = obj.getString("id");
+			logger.info(response.getStatusCode()+" replied. The new NSD Package id is :" + nsd_id);
+			response = osmClient.uploadNSDPackageContent(nsd_id, allBytes);
+			if (response == null || response.getStatusCode().is4xxClientError()	|| response.getStatusCode().is5xxServerError()) {
+				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
+				osmClient.deleteNSDPackage(nsd_id);
+				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
+				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
+				logger.error("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
+				uexpobds.setFeedbackMessage(response.getBody().toString());
+				logger.error("Onboarding Feedbacj Message of Experiment "+uexpobds.getExperiment().getName()+" is "+uexpobds.getFeedbackMessage());
+				// Set Valid to false if it fails OnBoarding
+				uexpobds.getExperiment().setValid(false);
+				aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+				aMANOClient.onBoardNSDFailed( uexpobds );
+				return;
+			}
+			else
+			{
+				uexpobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
+				logger.info("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
+				uexpobds.setFeedbackMessage("NSD Onboarded Successfully");
+				// The Deploy ID is set as the VNFD Package id in OSMANO4Provider
+				uexpobds.setDeployId(nsd_id);
+				// What should be the NSD Name. Something like cirros_nsd.
+				uexpobds.setExperimentMANOProviderID(em.getName());
+				// Set Onboarding date
+				uexpobds.setLastOnboarding(new Date());
+				// We decide to set valid when we have the final version. Thus we comment this.
+				// uexpobds.getExperiment().setValid(true);
+				// Save the changes to vxfobds
+				aMANOClient.updateExperimentOnBoardDescriptor(uexpobds);
+				aMANOClient.onBoardNSDSucceded( uexpobds );
+			}
+		}
 	}
 	
 	public void onBoardNSDToMANOProvider( ExperimentOnBoardDescriptor uexpobd ) throws Exception {

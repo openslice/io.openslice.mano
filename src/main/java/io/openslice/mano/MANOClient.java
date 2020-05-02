@@ -259,6 +259,7 @@ public class MANOClient {
 	}
 
 	public VxFMetadata getVxFById(long id) {
+		logger.info("Trying to get the VxF with id: "+id);
 		String ret = template.requestBody( "activemq:queue:getVxFByID", id, String.class);
 		logger.info("Message Received from AMQ:"+ret);
 		VxFMetadata vxfm = null;

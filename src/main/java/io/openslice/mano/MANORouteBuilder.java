@@ -44,6 +44,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.jms.annotation.JmsListener;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.io.Files;
 
 import io.openslice.model.VxFMetadata;
@@ -159,19 +161,23 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.marshal().json( JsonLibrary.Jackson, VxFOnBoardedDescriptor.class, true)
 		.convertBodyTo( String.class )
 		.to( "activemq:topic:vxf.onboard.success" );
-				
-				
-		
+										
 		from("activemq:topic:vxf.onboard")
 		.log( "activemq:topic:vxf.onboard for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
-		.bean( aMANOController, "onBoardVxFToMANOProvider" )
+		.bean( aMANOController, "onBoardVxFToMANOProviderByOBD" )
 		.to("log:DEBUG?showBody=true&showHeaders=true");
 		
 		from("activemq:topic:vxf.onboardbyfile")
 		.log( "activemq:topic:vxf.onboardbyfile for ${body} !" )
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.VxFOnBoardedDescriptor.class, true)
 		.bean( aMANOController, "onBoardVxFToMANOProviderByFile" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");
+
+		from("activemq:topic:vxf.onBoardByCompositeObj")
+		.log( "activemq:topic:vxf.onBoardByCompositeObj for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.CompositeVxFOnBoardDescriptor.class, true)
+		.bean( aMANOController, "onBoardVxFToMANOProviderByCompositeObj" )
 		.to("log:DEBUG?showBody=true&showHeaders=true");
 		
 		from("activemq:topic:vxf.offboard")
@@ -192,6 +198,12 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.ExperimentOnBoardDescriptor.class, true)
 		.bean( aMANOController, "onBoardNSDToMANOProviderByFile" )
 		.to("log:DEBUG?showBody=true&showHeaders=true");		
+
+		from("activemq:topic:nsd.onBoardByCompositeObj")
+		.log( "activemq:topic:nsd.onBoardByCompositeObj for ${body} !" )
+		.unmarshal().json( JsonLibrary.Jackson, io.openslice.model.CompositeExperimentOnBoardDescriptor.class, true)
+		.bean( aMANOController, "onBoardNSDToMANOProviderByCompositeObj" )
+		.to("log:DEBUG?showBody=true&showHeaders=true");
 		
 		from("activemq:topic:nsd.onboard")
 		.log( "activemq:topic:nsd.onboard for ${body} !" )
@@ -227,35 +239,7 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvFIVE"))
         	.bean(aMANOController, "mapOSM5NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
-        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");				
-	}
-	
-	@JmsListener(destination = "activemq:queue:onBoardVxFAdded")
-	public void receiveMessage(final Message aMessage) throws JMSException {
-
-		try {
-
-			if (aMessage instanceof ActiveMQBytesMessage) {
-				System.out.println("Received ActiveMQBytesMessage message");
-				String filename = aMessage.getStringProperty("fileName");
-				System.out.println("Received filename " + filename);
-				String outputfileName = Files.createTempDir() + File.separator +  filename;
-
-				ActiveMQBytesMessage bm = ((ActiveMQBytesMessage) aMessage);
-
-				File file = new File(outputfileName);
-				RandomAccessFile  accessFile = new RandomAccessFile(file, "rw");
-				accessFile.write(bm.getContent().getData());
-				accessFile.close();
-				System.out.println("Received filename saved at " + outputfileName);
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
+        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
+		
+	}	
 }
