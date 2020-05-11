@@ -231,6 +231,8 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvFIVE"))
         	.bean(aMANOController, "mapOSM5VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
+        	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
 
 		from("activemq:topic:ns.metadata.retrieve")
@@ -239,6 +241,8 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvFIVE"))
         	.bean(aMANOController, "mapOSM5NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
+        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
 		
 	}	

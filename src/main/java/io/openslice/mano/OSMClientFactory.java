@@ -58,18 +58,24 @@ import io.openslice.model.VxFMetadata;
 import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.OSMUtil.OSMNSExtractor;
 import io.openslice.sol005nbi.OSMUtil.OSMVNFDExtractor;
+import io.openslice.sol005nbi.etsi.GenericSOL005Client;
 
 @Configuration
 public class OSMClientFactory {
 	
 	public static OSMClient getOSMClient(String type,String apiEndpoint, String username, String password, String project_id) throws HttpStatusCodeException
 	{
+		String tokenEndpoint = "https://10.10.10.37:9999/osm/admin/v1/tokens/";
+		String basePath = "/vnfpkgm/v1";
+		
 		switch(type)
 		{
 			case "OSMvFIVE":
 				return new OSM5Client(apiEndpoint,username,password,project_id);
 			case "OSMvSEVEN":
 				return new OSM7Client(apiEndpoint,username,password,project_id);
+			case "GenericSOL005":
+			return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
 		}
 		return null;
 	}
