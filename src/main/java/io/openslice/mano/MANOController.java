@@ -546,7 +546,10 @@ public class MANOController {
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
 				CentralLogger.log( CLevel.INFO, "Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus(), compname);
 				logger.error("Onboarding Status change of Experiment "+uexpobds.getExperiment().getName()+" to "+uexpobds.getOnBoardingStatus());
-				uexpobds.setFeedbackMessage(response.getBody().toString());
+				
+				if ( response.getBody() !=null ) {
+					uexpobds.setFeedbackMessage(response.getBody().toString());
+				}
 				logger.error("Onboarding Feedbacj Message of Experiment "+uexpobds.getExperiment().getName()+" is "+uexpobds.getFeedbackMessage());
 				// Set Valid to false if it fails OnBoarding
 				uexpobds.getExperiment().setValid(false);
