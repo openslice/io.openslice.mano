@@ -708,12 +708,8 @@ public class MANOController {
 	        return ResponseEntity.status(e.getRawStatusCode()).headers(e.getResponseHeaders())
 	                .body(e.getResponseBodyAsString());
 		}						
-		response = osmClient.deleteNSDPackage(nsd_id);
-	
-		if (uexpobd.getObMANOprovider().getSupportedMANOplatform().getVersion().equals("OSMvTWO")) {
-			response = new ResponseEntity<>("Not implemented for OSMvTWO", HttpStatus.CREATED);
-		}	
-		
+		response = osmClient.deleteNSDPackage(nsd_id);	
+		logger.info("offBoardNSDFromMANOProvider, response sent back tou ActiveMQ: " + response.toString());		
 		return response;
 	}
 		
