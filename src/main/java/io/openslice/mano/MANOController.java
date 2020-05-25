@@ -234,8 +234,12 @@ public class MANOController {
 		String manoVersion = vxfobds.getObMANOprovider().getSupportedMANOplatform().getVersion();
 		OSMClient osmClient = null;
 		try {
+			logger.info("manoVersion: " + manoVersion);
 			osmClient = OSMClientFactory.getOSMClient(manoVersion, vxfobds.getObMANOprovider().getApiEndpoint(), vxfobds.getObMANOprovider().getUsername(), vxfobds.getObMANOprovider().getPassword(), vxfobds.getObMANOprovider().getProject());
 			//MANOStatus.setOsm5CommunicationStatusActive(null);
+			if ( osmClient == null ) {
+				new Exception( "Cannot create osmClient" );
+			}
 		}
 	    catch(Exception e) 
 		{
