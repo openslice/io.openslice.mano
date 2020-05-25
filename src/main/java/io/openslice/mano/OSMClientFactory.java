@@ -75,9 +75,9 @@ public class OSMClientFactory {
 			case "OSMvSEVEN":
 				return new OSM7Client(apiEndpoint,username,password,project_id);
 			case "GenericSOL005":
-			return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
+				return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
 		}
-		return null;
+		return new OSM7Client(apiEndpoint,username,password,project_id);
 	}
 	
 	public static OSMNSExtractor getOSMNSExtractor(String type,File NSDescriptorFile)
@@ -89,7 +89,7 @@ public class OSMClientFactory {
 			case "OSMvSEVEN":
 				return new OSM7NSExtractor(NSDescriptorFile);
 		}
-		return null;
+		return new OSM7NSExtractor(NSDescriptorFile);
 	}
 		
 	public static Boolean isOSMVersionSupported(String type)
