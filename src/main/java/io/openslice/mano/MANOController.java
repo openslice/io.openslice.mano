@@ -473,9 +473,9 @@ public class MANOController {
 		byte[] allBytes = compexpobd.getAllBytes();
 		
 		ExperimentMetadata em = uexpobd.getExperiment();
-		if (em == null) {
+		//if (em == null) {
 			em = (ExperimentMetadata) aMANOClient.getNSDById(uexpobd.getExperimentid());
-		}
+		//}
 		uexpobd.setExperiment(em);
 		uexpobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
 
