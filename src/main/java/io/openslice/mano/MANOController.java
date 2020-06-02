@@ -1147,7 +1147,9 @@ public class MANOController {
 
 	public void deleteNSFromMANOProvider(long deploymentdescriptorid) {
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
-
+		
+		
+		
 		logger.info("Will delete with deploymentdescriptorid : " + deploymentdescriptorid);		
 		String aMANOplatform = "";
 		try {	

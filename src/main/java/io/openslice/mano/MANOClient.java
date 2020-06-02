@@ -240,8 +240,10 @@ public class MANOClient {
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:"+ret.toString());
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
-			dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
-			logger.info("The experiment of the deployment is "+dd.getExperiment().toString());
+			if ( dd.getExperiment()!=null ) {
+				dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				logger.info("The experiment of the deployment is "+dd.getExperiment().toString());
+			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
