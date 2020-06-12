@@ -486,23 +486,23 @@ public class MANOController {
 
 		//uexpobd.setVxfMANOProviderID(em.getName()); // Possible Error. This probably needs to be
 		uexpobd.setExperimentMANOProviderID(em.getName());
-
 		uexpobd.setLastOnboarding(new Date());
 				
 		ExperimentOnBoardDescriptor uexpobds = aMANOClient.updateExperimentOnBoardDescriptor(uexpobd);
 		if (uexpobds == null) {
 			throw new Exception("Cannot load NSDOnBoardedDescriptor");
 		}
+		
 		em = uexpobds.getExperiment();
 		if (em == null) {
 			em = (ExperimentMetadata) aMANOClient.getNSDById(uexpobd.getExperimentid());
 		}
 		uexpobds.setExperiment(em);
-	
+		uexpobds.setObMANOprovider(uexpobd.getObMANOprovider());
 		String manoVersion = uexpobds.getObMANOprovider().getSupportedMANOplatform().getVersion();
 		OSMClient osmClient = null;
 		try {
-			osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobd.getObMANOprovider().getApiEndpoint(), uexpobd.getObMANOprovider().getUsername(), uexpobd.getObMANOprovider().getPassword(), uexpobd.getObMANOprovider().getProject());
+			osmClient = OSMClientFactory.getOSMClient(manoVersion , uexpobds.getObMANOprovider().getApiEndpoint(), uexpobds.getObMANOprovider().getUsername(), uexpobds.getObMANOprovider().getPassword(), uexpobds.getObMANOprovider().getProject());
 			//MANOStatus.setOsm5CommunicationStatusActive(null);								
 		}
 	    catch(Exception e) 
@@ -951,7 +951,6 @@ public class MANOController {
 		}
 		return null;
 	}
-
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
 		logger.info("Starting deployNSDToMANOProvicer");
