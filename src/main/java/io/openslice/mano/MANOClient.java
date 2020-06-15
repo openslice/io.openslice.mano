@@ -260,6 +260,40 @@ public class MANOClient {
 		return dd;	
 	}
 
+	// Get the data from the portal api (database)
+	public DeploymentDescriptor getDeploymentByInstanceIdEager(String Id)
+	{
+		String ret = template.requestBody( "activemq:queue:getDeploymentByInstanceIdEager", Id, String.class);
+
+		logger.info("Message Received from AMQ:"+ret);
+		DeploymentDescriptor dd = null;
+		// Map object to ExperimentMetadata
+		try {
+			// Map object to ExperimentMetadata
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:"+ret.toString());
+			dd = mapper.readValue(ret, DeploymentDescriptor.class);
+			if ( dd.getExperiment()!=null ) {
+				dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				logger.info("The experiment of the deployment is "+dd.getExperiment().toString());
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return dd;	
+	}
+
+	
 	public VxFMetadata getVxFById(long id) {
 		logger.info("Trying to get the VxF with id: "+id);
 		String ret = template.requestBody( "activemq:queue:getVxFByID", id, String.class);

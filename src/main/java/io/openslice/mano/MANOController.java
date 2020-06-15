@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONException;
@@ -41,14 +40,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
-
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import OSM5Util.OSM5ArchiveExtractor.OSM5NSExtractor;
 import OSM5Util.OSM5ArchiveExtractor.OSM5VNFDExtractor;
 import OSM5Util.OSM5NSReq.OSM5NSRequirements;
 import OSM5Util.OSM5VNFReq.OSM5VNFRequirements;
+import OSM7NBIClient.NSActionRequestPayload;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
@@ -56,7 +56,6 @@ import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
-//import OSM5NBIClient.OSM5Client;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.DeploymentDescriptorStatus;
 import io.openslice.model.ExperimentMetadata;
@@ -811,9 +810,16 @@ public class MANOController {
 							logger.info("Setting NSR Info:"+deployment_tmp.getNsr());
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING)
 							{
-								JSONObject ns_nslcm_details = osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
-								deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());																		
+								//JSONObject ns_nslcm_details = osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+								ResponseEntity<String> detailsResponse = osmClient.getNSLCMDetailsList();								
+								deployment_tmp.setNs_nslcm_details(detailsResponse.getBody());																		
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+								
+//								ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
+//								JSONObject obj = new JSONObject(response.getBody());
+//								String action_id = obj.getString("id");
+//								logger.info("Got action id:"+action_id);
+								
 								if(!deployment_tmp.getOperationalStatus().equals(ns_instance_info.getString("operational-status"))||!deployment_tmp.getConfigStatus().equals(ns_instance_info.getString("config-status"))||!deployment_tmp.getDetailedStatus().equals(ns_instance_info.getString("detailed-status").replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", "")))
 								{
 									logger.info("Status change of deployment "+deployment_tmp.getName()+" to "+deployment_tmp.getStatus());
@@ -952,6 +958,81 @@ public class MANOController {
 		return null;
 	}
 
+	public ResponseEntity<String> performNSInstanceAction(String nsactionrequestpayloadstring)
+	{
+		//Deserialize input string as a NSActionRequestPayload
+		NSActionRequestPayload nsactionrequestpayload;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			nsactionrequestpayload = mapper.readValue( nsactionrequestpayloadstring, NSActionRequestPayload.class);
+
+			DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByInstanceIdEager(nsactionrequestpayload.getNsInstanceId());		
+			ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);		
+			//Connect to OSM
+			OSMClient osmClient = null;
+			try {
+				logger.debug("Connecting to "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" MANO Client of version "+tmp.getObMANOprovider().getSupportedMANOplatform().getVersion()+".");
+				osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getVersion(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getProject());
+				//MANOStatus.setOsm5CommunicationStatusActive(null);
+			}
+			catch(Exception e)
+			{
+				logger.error("deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting action on NS.");
+				CentralLogger.log( CLevel.ERROR, "deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting action on NS.", compname);
+				deploymentdescriptor.setFeedback( (new Date()) + tmp.getObMANOprovider().getSupportedMANOplatform().getName() + "  communication failed. Aborting action on NS. " );
+				deploymentdescriptor.setOperationalStatus((new Date()) + " communication-failure ");
+				deploymentdescriptor = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
+				//aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
+				return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+			}		
+			
+			// Create the payload		
+			//nsactionrequestpayload = new NSActionRequestPayload();
+			//nsactionrequestpayload.setNsInstanceId(deploymentdescriptor.getInstanceId());
+			//nsactionrequestpayload.setMember_vnf_index("1");
+			//nsactionrequestpayload.setPrimitive("touch");
+			//Map<String, Object> primitive_params = new LinkedHashMap<String,Object>();
+			//primitive_params.put("filename", "/home/ubuntu/osmclienttest2");
+			//nsactionrequestpayload.setPrimitive_params(primitive_params);
+			
+			// Apply the Action
+			ResponseEntity<String> ns_action_entity = osmClient.actionNSInstance(deploymentdescriptor.getInstanceId(), nsactionrequestpayload.toJSON());
+			if (ns_action_entity == null || ns_action_entity.getStatusCode().is4xxClientError() || ns_action_entity.getStatusCode().is5xxServerError()) {
+				logger.error("NS Action failed. Status Code:"
+						+ ns_action_entity.getStatusCode().toString() + ", Payload:"
+						+ ns_action_entity.getBody().toString());
+			} else {
+				// NS action starts
+				logger.info("NS action of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
+				// Save the changes to DeploymentDescriptor
+				logger.info("NS action Status Code:"+ ns_action_entity.getStatusCode().toString() + ", Payload:" + ns_action_entity.getBody().toString());
+			}
+			// Get the response id or failure
+			return ns_action_entity;
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		}				
+	}
+
+	public ResponseEntity<String> getNSLCMDetails(String nsactionid)
+	{
+		return null;
+	}
+	
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
 		logger.info("Starting deployNSDToMANOProvicer");
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);		

@@ -38,6 +38,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.HttpStatus;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
@@ -244,6 +245,23 @@ public class MANORouteBuilder  extends RouteBuilder{
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
+
+		from("activemq:topic:ns.action.run")
+		.log("activemq:topic:ns.action.run")
+		.convertBodyTo( String.class )
+		.bean(aMANOController, "performNSInstanceAction")
+		.marshal().json( JsonLibrary.Jackson, true)
+		.convertBodyTo(String.class)
+		.log("action run ok with ${body}");
+
+		from("activemq:topic:ns.action.getnslcmdetails")
+		.log("activemq:topic:ns.action.getnslcmdetails")
+		.convertBodyTo( String.class )
+		.bean(aMANOController, "getNSLCMDetails")
+		.convertBodyTo(JSONObject.class)
+    	.log("action run ok with ${body}");
+		
+		
 		
 	}	
 }
