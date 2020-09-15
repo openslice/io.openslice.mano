@@ -246,8 +246,8 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
 
-		from("activemq:topic:ns.action.run")
-		.log("activemq:topic:ns.action.run")
+		from("jms:queue:ns.action.run")
+		.log("jms:queue:ns.action.run")
 		.convertBodyTo( String.class )
 		.bean(aMANOController, "performNSInstanceAction")
 		.marshal().json( JsonLibrary.Jackson, true)

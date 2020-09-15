@@ -1496,6 +1496,10 @@ public class MANOController {
 		Vnfd vnfd;
 		try {
 			vnfd = OSM7VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
+			if ( vnfd == null) {
+				logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
+				return null;				
+			}
 			// Get the name for the db							
 			prod.setName(vnfd.getName());
 			prod.setVersion(vnfd.getVersion());
@@ -1523,8 +1527,9 @@ public class MANOController {
 			
 			prod.setIconsrc(vnfd.getLogo());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
 			e.printStackTrace();
+			return null;
 		}
 		return prod;
 	}		
