@@ -44,10 +44,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import OSM5Util.OSM5ArchiveExtractor.OSM5NSExtractor;
-import OSM5Util.OSM5ArchiveExtractor.OSM5VNFDExtractor;
-import OSM5Util.OSM5NSReq.OSM5NSRequirements;
-import OSM5Util.OSM5VNFReq.OSM5VNFRequirements;
 import OSM7NBIClient.NSActionRequestPayload;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
@@ -1337,23 +1333,7 @@ public class MANOController {
 		}
 	}
 		
-	public String mapOSM5VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
-	{
-		VxFMetadata vxfMetadata = this.mapOSM5VNFD2Product(yamlFile);
-		ObjectMapper mapper = new ObjectMapper();		
-		String res = mapper.writeValueAsString( vxfMetadata );
-		
-		return res;		
-	}	
-	
-	public String mapOSM5NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
-	{
-		ExperimentMetadata vxfMetadata = this.mapOSM5NSD2Product(yamlFile);
-		ObjectMapper mapper = new ObjectMapper();		
-		String res = mapper.writeValueAsString( vxfMetadata );
-		
-		return res;		
-	}
+
 
 	public String mapOSM7VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
 	{
@@ -1374,43 +1354,7 @@ public class MANOController {
 	}
 
 
-	public ExperimentMetadata mapOSM5NSD2Product(String yamlFile)
-	{
-		ExperimentMetadata prod = new ExperimentMetadata();
-		
-		// Get the nsd object out of the file info
-		osm5.ns.yang.nfvo.nsd.rev170228.nsd.catalog.Nsd ns;
-		try {
-			ns = OSM5NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
-			
-			prod.setName(ns.getAddedId());
-			prod.setVersion(ns.getVersion());
-			prod.setVendor(ns.getVendor());
-			prod.setShortDescription(ns.getName());
-			prod.setLongDescription(ns.getDescription());
 
-			for (osm5.ns.yang.nfvo.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd v : ns.getConstituentVnfd()) {
-				ConstituentVxF cvxf = new ConstituentVxF();
-				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex())); 
-				cvxf.setVnfdidRef(v.getVnfdIdRef());				
-				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName(v.getVnfdIdRef());
-				cvxf.setVxfref(vxf);
-				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
-			}
-
-			// Get NS Requirements from the nsd			
-			OSM5NSRequirements vr = new OSM5NSRequirements(ns);
-			// Store the requirements in HTML			
-			prod.setDescriptorHTML(vr.toHTML());
-			// Store the YAML file			
-			prod.setDescriptor(yamlFile);
-			prod.setIconsrc(ns.getLogo());									
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return prod;	
-	}
 	
 	public ExperimentMetadata mapOSM7NSD2Product(String yamlFile)
 	{
@@ -1450,44 +1394,7 @@ public class MANOController {
 		return prod;	
 	}
 	
-	public VxFMetadata mapOSM5VNFD2Product(String yamlFile)
-	{
-		VxFMetadata prod = new VxFMetadata();
-		// Get the vnfd object out of the file info
-		osm5.ns.yang.nfvo.vnfd.rev170228.vnfd.catalog.Vnfd vnfd;
-		try {
-			vnfd = OSM5VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
-			// Get the name for the db							
-			prod.setName(vnfd.getAddedId());
-			prod.setVersion(vnfd.getVersion());
-			prod.setVendor(vnfd.getVendor());
-			prod.setShortDescription(vnfd.getName());
-			prod.setLongDescription(vnfd.getDescription());
-			
-			((VxFMetadata) prod).setValidationStatus( ValidationStatus.UNDER_REVIEW  );
-			((VxFMetadata) prod).getVfimagesVDU().clear();//clear previous referenced images
-			for (osm5.ns.riftware._1._0.vnfd.base.rev170228.vnfd.descriptor.Vdu vdu : vnfd.getVdu()) {
-				String imageName = vdu.getImage();
-				if ( ( imageName != null) && (!imageName.equals("")) ){
-					VFImage sm  = new VFImage();
-					sm.setName( imageName );
-					((VxFMetadata) prod).getVfimagesVDU().add( sm );					
-				}
-			}			
-			
-			// Get VNF Requirements from the vnfd
-			OSM5VNFRequirements vr = new OSM5VNFRequirements(vnfd);
-			// Store the requirements in HTML
-			prod.setDescriptorHTML(vr.toHTML());
-			// Store the YAML file
-			prod.setDescriptor(yamlFile);
-			prod.setIconsrc(vnfd.getLogo());			
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return prod;
-	}
+	
 		
 	public VxFMetadata mapOSM7VNFD2Product(String yamlFile)
 	{

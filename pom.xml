@@ -148,11 +148,6 @@
 			<artifactId>camel-zipkin-starter</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-validator</artifactId>
-			<version>5.3.6.Final</version>
-		</dependency>
-		<dependency>
 			<groupId>io.openslice</groupId>
 			<artifactId>io.openslice.model</artifactId>
 			<version>${project.version}</version>
@@ -168,12 +163,12 @@
 		</dependency>
 		<dependency>
 			<groupId>io.openslice.sol005nbi</groupId>
-			<artifactId>io.openslice.sol005nbi.osm5</artifactId>
+			<artifactId>io.openslice.sol005nbi.osm7</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>io.openslice.sol005nbi</groupId>
-			<artifactId>io.openslice.sol005nbi.osm7</artifactId>
+			<artifactId>io.openslice.sol005nbi.osm8</artifactId>
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>

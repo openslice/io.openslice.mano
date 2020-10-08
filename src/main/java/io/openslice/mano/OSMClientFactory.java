@@ -37,16 +37,13 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 
-import OSM5NBIClient.OSM5Client;
-import OSM5Util.OSM5ArchiveExtractor.OSM5NSExtractor;
-import OSM5Util.OSM5ArchiveExtractor.OSM5VNFDExtractor;
-import OSM5Util.OSM5NSReq.OSM5NSRequirements;
-import OSM5Util.OSM5VNFReq.OSM5VNFRequirements;
 import OSM7NBIClient.OSM7Client;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
 import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+import OSM8NBIClient.OSM8Client;
+import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import io.openslice.model.ConstituentVxF;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.ExperimentMetadata;
@@ -70,35 +67,35 @@ public class OSMClientFactory {
 		
 		switch(type)
 		{
-			case "OSMvFIVE":
-				return new OSM5Client(apiEndpoint,username,password,project_id);
 			case "OSMvSEVEN":
 				return new OSM7Client(apiEndpoint,username,password,project_id);
+			case "OSMvEIGHT":
+				return new OSM8Client(apiEndpoint,username,password,project_id);
 			case "GenericSOL005":
 				return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
 		}
-		return new OSM7Client(apiEndpoint,username,password,project_id);
+		return new OSM8Client(apiEndpoint,username,password,project_id);
 	}
 	
 	public static OSMNSExtractor getOSMNSExtractor(String type,File NSDescriptorFile)
 	{
 		switch(type)
 		{
-			case "OSMvFIVE":
-				return new OSM5NSExtractor(NSDescriptorFile);
-			case "OSMvSEVEN":
-				return new OSM7NSExtractor(NSDescriptorFile);
+		case "OSMvSEVEN":
+			return new OSM7NSExtractor(NSDescriptorFile);
+		case "OSMvEIGHT":
+			return new OSM8NSExtractor(NSDescriptorFile);
 		}
-		return new OSM7NSExtractor(NSDescriptorFile);
+		return new OSM8NSExtractor(NSDescriptorFile);
 	}
 		
 	public static Boolean isOSMVersionSupported(String type)
 	{
 		switch(type)
 		{
-			case "OSMvFIVE":
-				return true;
 			case "OSMvSEVEN":
+				return true;	
+			case "OSMvEIGHT":
 				return true;				
 		}
 		return false;

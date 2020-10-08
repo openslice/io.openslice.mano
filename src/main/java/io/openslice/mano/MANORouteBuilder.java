@@ -229,20 +229,20 @@ public class MANORouteBuilder  extends RouteBuilder{
 		from("activemq:topic:vxf.metadata.retrieve")
 		.log("activemq:topic:vxf.metadata.retrieve")
 		.choice()
-        .when(header("OSMType").isEqualTo("OSMvFIVE"))
-        	.bean(aMANOController, "mapOSM5VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
         	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvEIGHT"))
+        	.bean(aMANOController, "mapOSM8VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
 
 		from("activemq:topic:ns.metadata.retrieve")
 		.log("activemq:topic:ns.metadata.retrieve")
 		.choice()
-        .when(header("OSMType").isEqualTo("OSMvFIVE"))
-        	.bean(aMANOController, "mapOSM5NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvSEVEN"))
-        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson")
+    	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvEIGHT"))
+    	.bean(aMANOController, "mapOSM8NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
 
