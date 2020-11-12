@@ -1343,8 +1343,26 @@ public class MANOController {
 		
 		return res;		
 	}
+	
+	public String mapOSM8VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		VxFMetadata vxfMetadata = this.mapOSM7VNFD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}
 
 	public String mapOSM7NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
+	{
+		ExperimentMetadata vxfMetadata = this.mapOSM7NSD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();		
+		String res = mapper.writeValueAsString( vxfMetadata );
+		
+		return res;		
+	}
+	
+	public String mapOSM8NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException 
 	{
 		ExperimentMetadata vxfMetadata = this.mapOSM7NSD2Product(yamlFile);
 		ObjectMapper mapper = new ObjectMapper();		
