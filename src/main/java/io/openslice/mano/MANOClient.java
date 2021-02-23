@@ -27,6 +27,9 @@ import org.apache.camel.FluentProducerTemplate;
 import org.apache.camel.ProducerTemplate;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -664,5 +667,29 @@ public class MANOClient {
 	public void onBoardNSDSucceded(ExperimentOnBoardDescriptor experimentobds_final) {
 		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.onboard.success?multipleConsumers=true");
 		template.withBody( experimentobds_final ).asyncSend();				
-	}	
+	}
+	
+
+	public void alertOnScaleOpsList(String previous, String current)
+	{
+		try {
+	        JSONArray array = new JSONArray(previous);
+	        JSONArray array2 = new JSONArray(current);
+	        if(array.length()<array2.length())
+	        {
+		        for (int i = array.length()-1; i < array2.length(); ++i) {
+		        	JSONObject obj2 = array2.getJSONObject(i);
+		        	if(obj2.get("lcmOperationType").equals("scale"))
+		        	{
+			    		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("activemq:topic:nsd.scalealert?multipleConsumers=true");
+			    		template.withBody( obj2.get("operationParams").toString() ).asyncSend();
+		        	}
+		        	
+		        }
+	        }	        
+	    } catch (JSONException e) {
+	        logger.info("Crashed during alertOnScaleOpsList"+e.getMessage());
+	    }
+	}		
+	
 }

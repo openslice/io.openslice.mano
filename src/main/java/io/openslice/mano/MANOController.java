@@ -49,6 +49,8 @@ import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
 import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+import OSM8NBIClient.NSScaleRequestPayload;
+import OSM8NBIClient.NSScaleRequestPayload.ScaleVnfData.ScaleByStepData;
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
@@ -807,14 +809,34 @@ public class MANOController {
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING)
 							{
 								//JSONObject ns_nslcm_details = osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
-								ResponseEntity<String> detailsResponse = osmClient.getNSLCMDetailsList();								
-								deployment_tmp.setNs_nslcm_details(detailsResponse.getBody());																		
+								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details();
+								String current_nslcm_details = osmClient.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
+								aMANOClient.alertOnScaleOpsList(previous_nslcm_details, current_nslcm_details);								
+								deployment_tmp.setNs_nslcm_details(current_nslcm_details);																		
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 								
-//								ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
-//								JSONObject obj = new JSONObject(response.getBody());
-//								String action_id = obj.getString("id");
-//								logger.info("Got action id:"+action_id);
+								//ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
+								//JSONObject obj = new JSONObject(response.getBody());
+								//String action_id = obj.getString("id");
+								//logger.info("Got action id:"+action_id);
+								//
+								//// ******************************************************************************************************************* 		
+								//// Create the payload for 		
+								//NSScaleRequestPayload nsscalerequestpayload = new NSScaleRequestPayload();
+								//nsscalerequestpayload.setScaleType("SCALE_VNF");
+								//nsscalerequestpayload.setNsInstanceId(deployment_tmp.getInstanceId());
+								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setMember_vnf_index("1");			
+								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setScaling_group_descriptor("apache_vdu_autoscale");
+								//if(Math.random()>0.5)
+								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_IN");
+								//else
+								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_OUT");
+								//ResponseEntity<String> response=this.performNSInstanceScale(nsscalerequestpayload.toJSON());
+								//logger.info(nsscalerequestpayload.toJSON());
+								//JSONObject obj = new JSONObject(response.getBody());
+								//String action_id = obj.getString("id");
+								//logger.info("Got action id:"+action_id);
+								//// *******************************************************************************************************************
 								
 								if(!deployment_tmp.getOperationalStatus().equals(ns_instance_info.getString("operational-status"))||!deployment_tmp.getConfigStatus().equals(ns_instance_info.getString("config-status"))||!deployment_tmp.getDetailedStatus().equals(ns_instance_info.getString("detailed-status").replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", "")))
 								{
@@ -928,11 +950,11 @@ public class MANOController {
 							}
 							logger.info("NS status change is now "+deployment_tmp.getStatus());													
 						} catch (JSONException e) {
-							logger.error(e.getMessage());
+							logger.error("Status update failed with error:"+e.getMessage());
 						}
 					}
 				} catch (Exception e) {
-					logger.error(e.getMessage());
+					logger.error("Check and update process failed with error:"+e.getMessage());
 				}
 			}
 			checkAndDeployExperimentToMANOProvider();
@@ -1024,6 +1046,69 @@ public class MANOController {
 		}				
 	}
 
+	
+	public ResponseEntity<String> performNSInstanceScale(String nsscalerequestpayloadstring)
+	{
+		//Deserialize input string as a NSScaleRequestPayload
+		NSScaleRequestPayload nsscalerequestpayload;
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			nsscalerequestpayload = mapper.readValue( nsscalerequestpayloadstring, NSScaleRequestPayload.class);
+
+			DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByInstanceIdEager(nsscalerequestpayload.getNsInstanceId());		
+			ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);		
+			//Connect to OSM
+			OSMClient osmClient = null;
+			try {
+				logger.debug("Connecting to "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" MANO Client of version "+tmp.getObMANOprovider().getSupportedMANOplatform().getVersion()+".");
+				osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getVersion(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+						getExperimOBD(deploymentdescriptor).getObMANOprovider().getProject());
+				//MANOStatus.setOsm5CommunicationStatusActive(null);
+			}
+			catch(Exception e)
+			{
+				logger.error("deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting action on NS.");
+				CentralLogger.log( CLevel.ERROR, "deployNSDToMANOProvider, "+tmp.getObMANOprovider().getSupportedMANOplatform().getName()+" fails authentication! Aborting action on NS.", compname);
+				deploymentdescriptor.setFeedback( (new Date()) + tmp.getObMANOprovider().getSupportedMANOplatform().getName() + "  communication failed. Aborting action on NS. " );
+				deploymentdescriptor.setOperationalStatus((new Date()) + " communication-failure ");
+				deploymentdescriptor = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
+				//aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
+				return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+			}		
+			
+			// Apply the Action
+			ResponseEntity<String> ns_scale_entity = osmClient.scaleNSInstance(deploymentdescriptor.getInstanceId(), nsscalerequestpayload.toJSON());
+			if (ns_scale_entity == null || ns_scale_entity.getStatusCode().is4xxClientError() || ns_scale_entity.getStatusCode().is5xxServerError()) {
+				logger.error("NS Scale failed. Status Code:"
+						+ ns_scale_entity.getStatusCode().toString() + ", Payload:"
+						+ ns_scale_entity.getBody().toString());
+			} else {
+				// NS action starts
+				logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
+				// Save the changes to DeploymentDescriptor
+				logger.info("NS scale Status Code:"+ ns_scale_entity.getStatusCode().toString() + ", Payload:" + ns_scale_entity.getBody().toString());
+			}
+			// Get the response id or failure
+			return ns_scale_entity;
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		} catch (JsonMappingException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			logger.error(e.getMessage());
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:"+e.getMessage()+"}");
+		}				
+	}
+	
+	
 	public ResponseEntity<String> getNSLCMDetails(String nsactionid)
 	{
 		return null;

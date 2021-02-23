@@ -254,6 +254,14 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.convertBodyTo(String.class)
 		.log("action run ok with ${body}");
 
+		from("jms:queue:ns.scale.run")
+		.log("jms:queue:ns.scale.run")
+		.convertBodyTo( String.class )
+		.bean(aMANOController, "performNSInstanceScale")
+		.marshal().json( JsonLibrary.Jackson, true)
+		.convertBodyTo(String.class)
+		.log("scale operation run ok with ${body}");
+		
 		from("activemq:topic:ns.action.getnslcmdetails")
 		.log("activemq:topic:ns.action.getnslcmdetails")
 		.convertBodyTo( String.class )
