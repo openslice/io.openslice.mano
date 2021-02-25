@@ -50,7 +50,6 @@ import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
 import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
 import OSM8NBIClient.NSScaleRequestPayload;
-import OSM8NBIClient.NSScaleRequestPayload.ScaleVnfData.ScaleByStepData;
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
