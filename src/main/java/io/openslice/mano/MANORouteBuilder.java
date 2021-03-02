@@ -269,7 +269,17 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.convertBodyTo(JSONObject.class)
     	.log("action run ok with ${body}");
 		
+		from("activemq:topic:ns.action.getnslcmdetails")
+		.log("activemq:topic:ns.action.getnslcmdetails")
+		.convertBodyTo( String.class )
+		.bean(aMANOController, "getNSLCMDetails")
+		.convertBodyTo(JSONObject.class)
+    	.log("action run ok with ${body}");
 		
+		from("activemq:topic:nsd.scalealert")
+		.log("activemq:topic:nsd.scalealert")
+		.convertBodyTo( String.class )
+		.bean(aMANOController, "getScaleAlert");
 		
 	}	
 }

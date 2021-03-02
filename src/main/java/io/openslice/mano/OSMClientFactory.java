@@ -20,41 +20,15 @@
 package io.openslice.mano;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.Date;
-import java.util.List;
-import java.util.UUID;
-
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.project.nsd.catalog.Nsd;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.base.rev170228.vnfd.descriptor.Vdu;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.rev170228.vnfd.catalog.Vnfd;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.HttpStatusCodeException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
-
 import OSM7NBIClient.OSM7Client;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
-import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
-import OSM7Util.OSM7NSReq.OSM7NSRequirements;
-import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
 import OSM8NBIClient.OSM8Client;
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
-import io.openslice.model.ConstituentVxF;
-import io.openslice.model.DeploymentDescriptor;
-import io.openslice.model.ExperimentMetadata;
-import io.openslice.model.PortalUser;
-import io.openslice.model.Product;
-import io.openslice.model.VFImage;
-import io.openslice.model.ValidationStatus;
-import io.openslice.model.VxFMetadata;
 import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.OSMUtil.OSMNSExtractor;
-import io.openslice.sol005nbi.OSMUtil.OSMVNFDExtractor;
 import io.openslice.sol005nbi.etsi.GenericSOL005Client;
 
 @Configuration

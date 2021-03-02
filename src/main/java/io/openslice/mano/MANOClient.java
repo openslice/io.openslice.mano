@@ -681,7 +681,7 @@ public class MANOClient {
 		        	JSONObject obj2 = array2.getJSONObject(i);
 		        	if(obj2.get("lcmOperationType").equals("scale"))
 		        	{
-			    		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("activemq:topic:nsd.scalealert?multipleConsumers=true");
+			    		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
 			    		template.withBody( obj2.get("operationParams").toString() ).asyncSend();
 		        	}
 		        	
