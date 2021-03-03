@@ -577,13 +577,6 @@ public class MANOClient {
 		return mp;	
 	}
 	
-
-//	public void deployExperiment( DeploymentDescriptor  deploymentdescriptor) {		
-//		logger.info( "deployExperiment: to(\"seda:nsd.deploy?multipleConsumers=true\")");		
-//		FluentProducerTemplate	template = contxt.createFluentProducerTemplate().to("seda:nsd.deploy?multipleConsumers=true");
-//		template.withBody( deploymentdescriptor ).asyncSend();	
-//	}
-
 	public void deleteExperiment(DeploymentDescriptor deploymentdescriptorid) {
 		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.deployment.delete?multipleConsumers=true");
 		template.withBody( deploymentdescriptorid ).asyncSend();						
@@ -681,8 +674,10 @@ public class MANOClient {
 		        	JSONObject obj2 = array2.getJSONObject(i);
 		        	if(obj2.get("lcmOperationType").equals("scale"))
 		        	{
-			    		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
-			    		template.withBody( obj2.get("operationParams").toString() ).asyncSend();
+		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
+		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
+			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
+		        		logger.info("Message sent to seda:nsd.scalealert");
 		        	}
 		        	
 		        }
@@ -691,5 +686,4 @@ public class MANOClient {
 	        logger.info("Crashed during alertOnScaleOpsList"+e.getMessage());
 	    }
 	}		
-	
 }

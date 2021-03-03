@@ -817,6 +817,12 @@ public class MANOController {
 			this.deployNSDToMANOProvider(d.getId());
 		}
 	}
+	
+	public void getScaleAlertMessageBody(String Body)
+	{
+		logger.info("Scale Alert Body "+Body);
+	}	
+	
 
 	public void checkAndUpdateRunningDeploymentDescriptors() {
 		logger.info("Update Deployment Descriptors");
@@ -880,7 +886,9 @@ public class MANOController {
 								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details();
 								String current_nslcm_details = osmClient
 										.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
+								logger.info("Calling alert on scale");
 								aMANOClient.alertOnScaleOpsList(previous_nslcm_details, current_nslcm_details);
+								logger.info("After Calling alert on scale");
 								deployment_tmp.setNs_nslcm_details(current_nslcm_details);
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 
@@ -1767,7 +1775,8 @@ public class MANOController {
 	
 	public void getScaleAlert(String body)
 	{
-		logger.info("Scaling message received with body "+body);
+		System.out.println("Scaling message received with body");
+		logger.info("Scaling message received with body");
 	}
 	
 
