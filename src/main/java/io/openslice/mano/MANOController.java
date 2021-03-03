@@ -43,15 +43,10 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-<<<<<<< HEAD
-=======
-import OSM7NBIClient.NSActionRequestPayload;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
 import OSM7Util.OSM7NSReq.OSM7NSRequirements;
 import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
-import OSM8NBIClient.NSScaleRequestPayload;
->>>>>>> branch 'develop' of https://github.com/openslice/io.openslice.mano.git
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
@@ -69,11 +64,6 @@ import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.ΑNSActionRequestPayload;
 import io.openslice.sol005nbi.ANSScaleRequestPayload;
 import io.openslice.centrallog.client.*;
-
-import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
-import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
-import OSM7Util.OSM7NSReq.OSM7NSRequirements;
-import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
 
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8VNFDExtractor;
