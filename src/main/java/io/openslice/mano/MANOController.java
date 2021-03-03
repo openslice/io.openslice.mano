@@ -898,24 +898,24 @@ public class MANOController {
 
 								// *******************************************************************************************************************
 								// Create the payload for
-								logger.info("Starting scaling");
-								ANSScaleRequestPayload nsscalerequestpayload = new ANSScaleRequestPayload();
-								nsscalerequestpayload.setScaleType("SCALE_VNF");
-								nsscalerequestpayload.setNsInstanceId(deployment_tmp.getInstanceId());
-								nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setMember_vnf_index("1");
-								nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
-										.setScaling_group_descriptor("apache_vdu_autoscale");
-								if (Math.random() > 0.5) {
-									nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_IN");
-								} else {
-									nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_OUT");
-								}
-								ResponseEntity<String> response = this
-										.performNSInstanceScale(nsscalerequestpayload.toJSON());
-								logger.info(nsscalerequestpayload.toJSON());
-								JSONObject obj = new JSONObject(response.getBody());
-								String action_id = obj.getString("id");
-								logger.info("Got action id:" + action_id);
+								//logger.info("Starting scaling");
+								//ANSScaleRequestPayload nsscalerequestpayload = new ANSScaleRequestPayload();
+								//nsscalerequestpayload.setScaleType("SCALE_VNF");
+								//nsscalerequestpayload.setNsInstanceId(deployment_tmp.getInstanceId());
+								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setMember_vnf_index("1");
+								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
+								//		.setScaling_group_descriptor("apache_vdu_autoscale");
+								//if (Math.random() > 0.5) {
+								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_IN");
+								//} else {
+								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_OUT");
+								//}
+								//ResponseEntity<String> response = this
+								//		.performNSInstanceScale(nsscalerequestpayload.toJSON());
+								//logger.info(nsscalerequestpayload.toJSON());
+								//JSONObject obj = new JSONObject(response.getBody());
+								//String action_id = obj.getString("id");
+								//logger.info("Got action id:" + action_id);
 								// *******************************************************************************************************************
 
 								if (!deployment_tmp.getOperationalStatus()
