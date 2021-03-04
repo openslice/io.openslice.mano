@@ -66,3 +66,9 @@ portaltitle: "openslice"
 maindomain: "http://localhost:13000"
 main_operations_product: "Openslice Operations"
 
+
+
+#ALARMS
+ALARMS_ADD_ALARM: "jms:queue:ALARMS.ADD.ALARM"
+ALARMS_UPDATE_ALARM: "jms:queue:ALARMS.UPDATE.ALARM"
+ALARMS_GET_ALARM: "jms:queue:ALARMS.GET.ALARM"

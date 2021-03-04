@@ -20,6 +20,9 @@
 package io.openslice.mano;
 
 import java.io.IOException;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.camel.CamelContext;
@@ -31,6 +34,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -44,6 +50,12 @@ import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
+import io.openslice.tmf.am642.model.AffectedService;
+import io.openslice.tmf.am642.model.AlarmCreate;
+import io.openslice.tmf.am642.model.AlarmStateType;
+import io.openslice.tmf.am642.model.AlarmType;
+import io.openslice.tmf.am642.model.PerceivedSeverityType;
+import io.openslice.tmf.am642.model.ProbableCauseType;
 
 import org.springframework.stereotype.Service;
 
@@ -66,6 +78,12 @@ public class MANOClient {
 	
 	MANOController aMANOController;
 
+	@Value("${ALARMS_ADD_ALARM}")
+	private String ALARMS_ADD_ALARM ="";
+
+	@Value("${spring.application.name}")
+	private String compname;
+	
 	public VxFOnBoardedDescriptor getVxFOnBoardedDescriptorByID(long id)
 	{
 		String ret = template.requestBody( "activemq:queue:getVxFOnBoardedDescriptorByID", id, String.class);
@@ -663,7 +681,7 @@ public class MANOClient {
 	}
 	
 
-	public void alertOnScaleOpsList(String previous, String current)
+	public void alertOnScaleOpsList(DeploymentDescriptor deployment_tmp, String previous, String current)
 	{
 		try {
 	        JSONArray array = new JSONArray(previous);
@@ -673,11 +691,42 @@ public class MANOClient {
 		        for (int i = array.length()-1; i < array2.length(); ++i) {
 		        	JSONObject obj2 = array2.getJSONObject(i);
 		        	if(obj2.get("lcmOperationType").equals("scale"))
-		        	{
-		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
-		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
-			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
-		        		logger.info("Message sent to seda:nsd.scalealert");
+		        	{		        		
+		        		
+//		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
+//		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
+//			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
+//		        		logger.info("Message sent to seda:nsd.scalealert");
+		        		
+
+		        		logger.info("Sending An AlertCreate with details the body "+obj2.get("operationParams").toString());
+		        		
+						try {
+			        		AlarmCreate a = new AlarmCreate();
+			        		a.setPerceivedSeverity(PerceivedSeverityType.warning.name());
+			        		a.setState(AlarmStateType.raised.name());
+			        		a.setAckState("unacknowledged");
+			        		a.setAlarmRaisedTime(OffsetDateTime.now(ZoneOffset.UTC).toString());
+			        		a.setSourceSystemId( compname );
+			        		a.setAffectedService(new ArrayList<>());
+			        		a.setAlarmDetails( "operation=" + obj2.get("operationParams").toString()  );
+			        		a.setAlarmType(AlarmType.qualityOfServiceAlarm.name());
+			        		a.setIsRootCause(true);
+			        		a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
+			        		a.setSpecificProblem("DeploymentRequestID=" + deployment_tmp.getId()  + ";"
+			        				+ "InstanceId=" + deployment_tmp.getInstanceId()   );
+	
+			        		
+			        		String body;
+							body = toJsonString(a);
+			        		Object response = template.requestBody( ALARMS_ADD_ALARM, body);
+			        		logger.info("Message sent to AlertCreate response=" + response ) ;
+						} catch (IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+			    		
+		        		
 		        	}
 		        	
 		        }
@@ -686,4 +735,11 @@ public class MANOClient {
 	        logger.info("Crashed during alertOnScaleOpsList"+e.getMessage());
 	    }
 	}		
+	
+	static String toJsonString(Object object) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		return mapper.writeValueAsString(object);
+	}
+
 }

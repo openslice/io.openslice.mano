@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
@@ -885,10 +886,10 @@ public class MANOController {
 								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details();
 								String current_nslcm_details = osmClient
 										.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
-								logger.info("Calling alert on scale");
-								aMANOClient.alertOnScaleOpsList(previous_nslcm_details, current_nslcm_details);
-								logger.info("After Calling alert on scale");
 								deployment_tmp.setNs_nslcm_details(current_nslcm_details);
+								logger.info("Calling alert on scale");
+								aMANOClient.alertOnScaleOpsList(deployment_tmp, previous_nslcm_details, current_nslcm_details);
+								logger.info("After Calling alert on scale");
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 
 //								ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
@@ -932,34 +933,8 @@ public class MANOController {
 											+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
 									deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-									deployment_tmp.setConstituentVnfrIps("");
-									for (int j = 0; j < ns_instance_info.getJSONArray("constituent-vnfr-ref")
-											.length(); j++) {
-										if (j > 0) {
-											deployment_tmp.setConstituentVnfrIps(
-													deployment_tmp.getConstituentVnfrIps() + ", ");
-										}
-										ResponseEntity<String> vnf_instance_id_info_response = osmClient
-												.getVNFInstanceInfoNew(ns_instance_info
-														.getJSONArray("constituent-vnfr-ref").get(j).toString());
-										if (!vnf_instance_id_info_response.getStatusCode().is4xxClientError()
-												&& !vnf_instance_id_info_response.getStatusCode().is5xxServerError()) {
-											JSONObject vnf_instance_info = new JSONObject(
-													vnf_instance_id_info_response.getBody());
-											try {
-												deployment_tmp
-														.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps()
-																+ vnf_instance_info.getString("ip-address"));
-											} catch (JSONException e) {
-												logger.error(e.getMessage());
-											}
-										} else {
-											deployment_tmp.setConstituentVnfrIps(
-													deployment_tmp.getConstituentVnfrIps() + "Ν/Α");
-											logger.error("ERROR gettin constituent-vnfr-ref info. Response:"
-													+ vnf_instance_id_info_response.getBody().toString());
-										}
-									}
+									deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
+								
 									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 									aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
 								}
@@ -969,6 +944,9 @@ public class MANOController {
 							deployment_tmp.setConfigStatus(ns_instance_info.getString("config-status"));
 							deployment_tmp.setDetailedStatus(ns_instance_info.getString("detailed-status")
 									.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+
+
+							
 							// Depending on the current OSM status, change the portal status.
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
 									&& deployment_tmp.getOperationalStatus().toLowerCase().equals("running")) {
@@ -983,34 +961,8 @@ public class MANOController {
 										+ " to " + deployment_tmp.getStatus(), compname);
 								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-								deployment_tmp.setConstituentVnfrIps("");
-								for (int j = 0; j < ns_instance_info.getJSONArray("constituent-vnfr-ref")
-										.length(); j++) {
-									if (j > 0) {
-										deployment_tmp
-												.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps() + ", ");
-									}
-									ResponseEntity<String> vnf_instance_id_info_response = osmClient
-											.getVNFInstanceInfoNew(ns_instance_info.getJSONArray("constituent-vnfr-ref")
-													.get(j).toString());
-									if (!vnf_instance_id_info_response.getStatusCode().is4xxClientError()
-											&& !vnf_instance_id_info_response.getStatusCode().is5xxServerError()) {
-										JSONObject vnf_instance_info = new JSONObject(
-												vnf_instance_id_info_response.getBody());
-										try {
-											deployment_tmp.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps()
-													+ vnf_instance_info.getString("ip-address"));
-										} catch (JSONException e) {
-											logger.error(e.getMessage());
-										}
-									} else {
-										deployment_tmp
-												.setConstituentVnfrIps(deployment_tmp.getConstituentVnfrIps() + "Ν/Α");
-										logger.error("ERROR gettin constituent-vnfr-ref info. Response:"
-												+ vnf_instance_id_info_response.getBody().toString());
-										// break;
-									}
-								}
+
+								deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 								aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
 							}
@@ -1073,6 +1025,39 @@ public class MANOController {
 			logger.error(e.getMessage());
 		}
 
+	}
+
+	private String extractIPsFromNSR(JSONObject ns_instance_info) {
+		try {
+			JSONObject deploymentStatus = ns_instance_info.getJSONObject("deploymentStatus");
+			StringBuffer IPinfo = new StringBuffer();
+			JSONArray vnfs = deploymentStatus.getJSONArray("vnfs");
+			for (int k = 0; k < vnfs.length(); k++) {
+				JSONObject vnf = (JSONObject) vnfs.get(k);
+				IPinfo.append(vnf.get("vnf_name") + ":");
+				IPinfo.append(vnf.get("ip_address"));
+				JSONArray vms = vnf.getJSONArray("vms");
+				IPinfo.append("[");
+				for (int l = 0; l < vms.length(); l++) {
+					JSONObject vm = (JSONObject) vms.get(l);
+					JSONArray interfaces = vm.getJSONArray("interfaces");
+					// IPinfo.append( "ifs=" );
+					for (int m = 0; m < interfaces.length(); m++) {
+						JSONObject ipinterface = (JSONObject) interfaces.get(m);
+						IPinfo.append(ipinterface.get("ip_address") + ",");
+					}
+
+				}
+				IPinfo.append("]\n");
+			}
+
+			logger.info(IPinfo);
+			return IPinfo.toString();
+
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+		}
+		return "";
 	}
 
 	private ExperimentOnBoardDescriptor getExperimOBD(DeploymentDescriptor deployment_tmp) {
