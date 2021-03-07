@@ -78,11 +78,12 @@ public class MANOClient {
 	
 	MANOController aMANOController;
 
-	@Value("${ALARMS_ADD_ALARM}")
-	private String ALARMS_ADD_ALARM ="";
+	@Autowired
+	AlarmsService alarmsService;
 
 	@Value("${spring.application.name}")
 	private String compname;
+	
 	
 	public VxFOnBoardedDescriptor getVxFOnBoardedDescriptorByID(long id)
 	{
@@ -716,10 +717,8 @@ public class MANOClient {
 			        		a.setSpecificProblem("DeploymentRequestID=" + deployment_tmp.getId()  + ";"
 			        				+ "InstanceId=" + deployment_tmp.getInstanceId()   );
 	
+			        		String response = alarmsService.createAlarm(a);
 			        		
-			        		String body;
-							body = toJsonString(a);
-			        		Object response = template.requestBody( ALARMS_ADD_ALARM, body);
 			        		logger.info("Message sent to AlertCreate response=" + response ) ;
 						} catch (IOException e) {
 							// TODO Auto-generated catch block
@@ -736,10 +735,4 @@ public class MANOClient {
 	    }
 	}		
 	
-	static String toJsonString(Object object) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		return mapper.writeValueAsString(object);
-	}
-
 }
