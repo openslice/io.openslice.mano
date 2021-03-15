@@ -57,6 +57,7 @@ import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
+import io.openslice.model.ScaleDescriptor;
 import io.openslice.model.VFImage;
 import io.openslice.model.ValidationStatus;
 import io.openslice.model.VxFMetadata;
@@ -1146,6 +1147,68 @@ public class MANOController {
 			logger.error(e.getMessage());
 			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:" + e.getMessage() + "}");
 		}
+	}
+	
+	public ResponseEntity<String> performNSScale(ScaleDescriptor aScaleDescriptor) {
+
+		DeploymentDescriptor deploymentdescriptor = aMANOClient
+				.getDeploymentByInstanceIdEager(aScaleDescriptor.getNsInstanceId());
+
+		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
+		// Connect to OSM
+		OSMClient osmClient = null;
+		try {
+			logger.debug("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+					+ " MANO Client of version " + tmp.getObMANOprovider().getSupportedMANOplatform().getVersion()
+					+ ".");
+			osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getVersion(),
+					getExperimOBD(deploymentdescriptor).getObMANOprovider().getApiEndpoint(),
+					getExperimOBD(deploymentdescriptor).getObMANOprovider().getUsername(),
+					getExperimOBD(deploymentdescriptor).getObMANOprovider().getPassword(),
+					getExperimOBD(deploymentdescriptor).getObMANOprovider().getProject());
+			// MANOStatus.setOsm5CommunicationStatusActive(null);
+		} catch (Exception e) {
+			logger.error("deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+					+ " fails authentication! Aborting action on NS.");
+			CentralLogger.log(CLevel.ERROR,
+					"deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+							+ " fails authentication! Aborting action on NS.",
+					compname);
+			deploymentdescriptor.setFeedback((new Date()) + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+					+ "  communication failed. Aborting action on NS. ");
+			deploymentdescriptor.setOperationalStatus((new Date()) + " communication-failure ");
+			deploymentdescriptor = aMANOClient.updateDeploymentDescriptor(deploymentdescriptor);
+			// aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
+			return (ResponseEntity<String>) ResponseEntity.badRequest().body("{message:" + e.getMessage() + "}");
+		}
+
+		ANSScaleRequestPayload nsscalerequestpayload = new ANSScaleRequestPayload();
+		nsscalerequestpayload.setScaleType(aScaleDescriptor.getScaleType());
+		nsscalerequestpayload.setNsInstanceId(aScaleDescriptor.getNsInstanceId());
+		nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
+				.setMember_vnf_index(aScaleDescriptor.getMemberVnfIndex());
+		nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
+				.setScaling_group_descriptor(aScaleDescriptor.getScalingGroupDescriptor());
+
+		nsscalerequestpayload.getScaleVnfData().setScaleVnfType(aScaleDescriptor.getScaleVnfType());
+
+		// Apply the Action
+		ResponseEntity<String> ns_scale_entity = osmClient.scaleNSInstance(deploymentdescriptor.getInstanceId(),
+				nsscalerequestpayload.toJSON());
+		if (ns_scale_entity == null || ns_scale_entity.getStatusCode().is4xxClientError()
+				|| ns_scale_entity.getStatusCode().is5xxServerError()) {
+			logger.error("NS Scale failed. Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+					+ ns_scale_entity.getBody().toString());
+		} else {
+			// NS action starts
+			logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
+			// Save the changes to DeploymentDescriptor
+			logger.info("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+					+ ns_scale_entity.getBody().toString());
+		}
+		// Get the response id or failure
+		return ns_scale_entity;
+
 	}
 
 	public ResponseEntity<String> performNSInstanceScale(String nsscalerequestpayloadstring) {

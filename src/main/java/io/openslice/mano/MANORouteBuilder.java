@@ -33,6 +33,7 @@ import javax.jms.Message;
 import org.apache.activemq.command.ActiveMQBytesMessage;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.Processor;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.impl.DefaultCamelContext;
@@ -40,6 +41,7 @@ import org.apache.camel.model.dataformat.JsonLibrary;
 import org.apache.http.HttpStatus;
 import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jms.annotation.JmsListener;
@@ -49,6 +51,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.google.common.io.Files;
 
+import io.openslice.model.ScaleDescriptor;
 import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
 
@@ -64,6 +67,11 @@ public class MANORouteBuilder  extends RouteBuilder{
 	@Autowired
 	MANOController aMANOController;
 
+
+	@Value("${NFV_CATALOG_NSACTIONS_SCALE}")
+	private String NFV_CATALOG_NSACTIONS_SCALE ="";
+	
+	
 	public static void main(String[] args) throws Exception {
 		//new Main().run(args);				
 		CamelContext tempcontext = new DefaultCamelContext();
@@ -261,6 +269,19 @@ public class MANORouteBuilder  extends RouteBuilder{
 		.marshal().json( JsonLibrary.Jackson, true)
 		.convertBodyTo(String.class)
 		.log("scale operation run ok with ${body}");
+				
+
+		from( NFV_CATALOG_NSACTIONS_SCALE )
+		.log(LoggingLevel.INFO, log, NFV_CATALOG_NSACTIONS_SCALE + " message received!")
+		.to("log:DEBUG?showBody=true&showHeaders=true")
+		.unmarshal()
+		.json( JsonLibrary.Jackson, ScaleDescriptor.class, true) 
+		.bean(aMANOController, "performNSScale")
+		.convertBodyTo(String.class);
+		
+		
+		
+		
 		
 		from("activemq:topic:ns.action.getnslcmdetails")
 		.log("activemq:topic:ns.action.getnslcmdetails")

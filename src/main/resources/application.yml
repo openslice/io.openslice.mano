@@ -72,3 +72,9 @@ main_operations_product: "Openslice Operations"
 ALARMS_ADD_ALARM: "jms:queue:ALARMS.ADD.ALARM"
 ALARMS_UPDATE_ALARM: "jms:queue:ALARMS.UPDATE.ALARM"
 ALARMS_GET_ALARM: "jms:queue:ALARMS.GET.ALARM"
+
+
+#NS ACTIONS
+NFV_CATALOG_NSACTIONS_SCALE: "jms:queue:NSACTIONS.SCALE"
+
+
