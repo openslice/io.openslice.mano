@@ -884,12 +884,14 @@ public class MANOController {
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) {
 								// JSONObject ns_nslcm_details =
 								// osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
-								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details();
+								
+								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details(); //contains last performed action of array
 								String current_nslcm_details = osmClient
 										.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
-								deployment_tmp.setNs_nslcm_details(current_nslcm_details);
 								logger.info("Calling alert on scale");
-								aMANOClient.alertOnScaleOpsList(deployment_tmp, previous_nslcm_details, current_nslcm_details);
+								current_nslcm_details = aMANOClient.alertOnScaleOpsList(deployment_tmp, previous_nslcm_details, current_nslcm_details);
+
+								deployment_tmp.setNs_nslcm_details(current_nslcm_details);
 								logger.info("After Calling alert on scale");
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 

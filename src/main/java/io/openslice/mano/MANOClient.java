@@ -691,70 +691,152 @@ public class MANOClient {
 		template.withBody(experimentobds_final).asyncSend();
 	}
 
-	public void alertOnScaleOpsList(DeploymentDescriptor deployment_tmp, String previous, String current) {
+	/**
+	 * 
+	 * Compare previous last known action with the last one. We ignore any intermediate actions
+	 * @param deployment_tmp
+	 * @param previous
+	 * @param current
+	 * @return
+	 */
+	public String alertOnScaleOpsList(DeploymentDescriptor deployment_tmp, String previous, String current) {
+
+		
 		try {
-			JSONArray array = new JSONArray(previous);
+			
+
+			JSONObject prevObj = new JSONObject( previous );
+
 			JSONArray array2 = new JSONArray(current);
-			if (array.length() < array2.length()) {
-				for (int i = array.length() - 1; i < array2.length(); ++i) {
-					JSONObject obj2 = array2.getJSONObject(i);
-					if ( (obj2.get("lcmOperationType").equals("scale")) && 
-							 (!obj2.get("operationState").equals("FAILED"))) {
-//"operationState": "FAILED",
-//		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
-//		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
-//			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
-//		        		logger.info("Message sent to seda:nsd.scalealert");
+			JSONObject currentLastObj = array2.getJSONObject( array2.length() - 1 );
+			
+			
+			if ( !prevObj.get("id").equals( currentLastObj.get("id") ) ) {
+				JSONObject obj2 = currentLastObj;
+				if ( (obj2.get("lcmOperationType").equals("scale")) && 
+						 (!obj2.get("operationState").equals("FAILED"))) {
 
-						logger.info("Sending An AlertCreate with details the body "
-								+ obj2.get("operationParams").toString());
+					logger.info("Sending An AlertCreate with details the body "
+							+ obj2.get("operationParams").toString());
 
-						try {
-							AlarmCreate a = new AlarmCreate();
-							a.setPerceivedSeverity(PerceivedSeverityType.critical.name());
-							a.setState(AlarmStateType.raised.name());
-							a.setAckState("unacknowledged");
-							a.setAlarmRaisedTime(OffsetDateTime.now(ZoneOffset.UTC).toString());
-							a.setSourceSystemId(compname);
-							a.setAffectedService(new ArrayList<>());
-							a.setAlarmType(AlarmType.qualityOfServiceAlarm.name());
-							a.setIsRootCause(true);
-							a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
-							String scaletype = "";
-							if (obj2.toString().contains( "SCALE_IN") ) {
-								scaletype = "SCALE_IN";								
-							}else {
-								scaletype = "SCALE_OUT";								
-							}
-							a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() 
-							+ ";" + "InstanceId=" + deployment_tmp.getInstanceId() 
-							+ ";" + "scaletype=" + scaletype);
-							Comment comment = new Comment();
-							comment.setTime(OffsetDateTime.now(ZoneOffset.UTC));
-							comment.setSystemId(compname);
-							
-							
-							a.setSpecificProblem("action=" + scaletype );
-							
-							comment.setComment("Scale Operation " + scaletype + " on NSD with DeploymentRequestID="
-									+ deployment_tmp.getId());
-							a.addCommentItem(comment);
-
-							String response = alarmsService.createAlarm(a);
-
-							logger.info("Message sent to AlertCreate response=" + response);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
+					try {
+						AlarmCreate a = new AlarmCreate();
+						a.setPerceivedSeverity(PerceivedSeverityType.critical.name());
+						a.setState(AlarmStateType.raised.name());
+						a.setAckState("unacknowledged");
+						a.setAlarmRaisedTime(OffsetDateTime.now(ZoneOffset.UTC).toString());
+						a.setSourceSystemId(compname);
+						a.setAffectedService(new ArrayList<>());
+						a.setAlarmType(AlarmType.qualityOfServiceAlarm.name());
+						a.setIsRootCause(true);
+						a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
+						String scaletype = "";
+						if (obj2.toString().contains( "SCALE_IN") ) {
+							scaletype = "SCALE_IN";								
+						}else {
+							scaletype = "SCALE_OUT";								
 						}
+						a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() 
+						+ ";" + "InstanceId=" + deployment_tmp.getInstanceId() 
+						+ ";" + "scaletype=" + scaletype);
+						Comment comment = new Comment();
+						comment.setTime(OffsetDateTime.now(ZoneOffset.UTC));
+						comment.setSystemId(compname);
+						
+						
+						a.setSpecificProblem("action=" + scaletype );
+						
+						comment.setComment("Scale Operation " + scaletype + ". " + a.getAlarmDetails() );
+						a.addCommentItem(comment);
 
+						String response = alarmsService.createAlarm(a);
+
+						logger.info("Message sent to AlertCreate response=" + response);
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
 					}
 
 				}
+				return currentLastObj.toString();
+
 			}
+			
+				
 		} catch (JSONException e) {
 			logger.info("Crashed during alertOnScaleOpsList" + e.getMessage());
 		}
+		
+		
+		
+
+		return previous;
+		
+		
+		
+//		try {
+//			JSONArray array = new JSONArray(previous);
+//			JSONArray array2 = new JSONArray(current);
+//			if (array.length() < array2.length()) {
+//				for (int i = array.length() - 1; i < array2.length(); ++i) {
+//					JSONObject obj2 = array2.getJSONObject(i);
+//					if ( (obj2.get("lcmOperationType").equals("scale")) && 
+//							 (!obj2.get("operationState").equals("FAILED"))) {
+////"operationState": "FAILED",
+////		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
+////		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
+////			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
+////		        		logger.info("Message sent to seda:nsd.scalealert");
+//
+//						logger.info("Sending An AlertCreate with details the body "
+//								+ obj2.get("operationParams").toString());
+//
+//						try {
+//							AlarmCreate a = new AlarmCreate();
+//							a.setPerceivedSeverity(PerceivedSeverityType.critical.name());
+//							a.setState(AlarmStateType.raised.name());
+//							a.setAckState("unacknowledged");
+//							a.setAlarmRaisedTime(OffsetDateTime.now(ZoneOffset.UTC).toString());
+//							a.setSourceSystemId(compname);
+//							a.setAffectedService(new ArrayList<>());
+//							a.setAlarmType(AlarmType.qualityOfServiceAlarm.name());
+//							a.setIsRootCause(true);
+//							a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
+//							String scaletype = "";
+//							if (obj2.toString().contains( "SCALE_IN") ) {
+//								scaletype = "SCALE_IN";								
+//							}else {
+//								scaletype = "SCALE_OUT";								
+//							}
+//							a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() 
+//							+ ";" + "InstanceId=" + deployment_tmp.getInstanceId() 
+//							+ ";" + "scaletype=" + scaletype);
+//							Comment comment = new Comment();
+//							comment.setTime(OffsetDateTime.now(ZoneOffset.UTC));
+//							comment.setSystemId(compname);
+//							
+//							
+//							a.setSpecificProblem("action=" + scaletype );
+//							
+//							comment.setComment("Scale Operation " + scaletype + " on NSD with DeploymentRequestID="
+//									+ deployment_tmp.getId());
+//							a.addCommentItem(comment);
+//
+//							String response = alarmsService.createAlarm(a);
+//
+//							logger.info("Message sent to AlertCreate response=" + response);
+//						} catch (IOException e) {
+//							// TODO Auto-generated catch block
+//							e.printStackTrace();
+//						}
+//
+//					}
+//
+//				}
+//			}
+//		} catch (JSONException e) {
+//			logger.info("Crashed during alertOnScaleOpsList" + e.getMessage());
+//		}
 	}
 
 }
