@@ -1513,11 +1513,11 @@ public class MANOController {
 					"Descriptor targets an " + aMANOplatform + " deploymentdescriptorid: " + deploymentdescriptorid);
 			// There can be multiple MANOs for the Experiment. We need to handle that also.
 			// After TERMINATION
-			boolean force;
-			if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATED) {
-				force = false;
-			} else if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED
-					|| deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATION_FAILED) // for FAILED
+			boolean force = false;
+	
+			if ( deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATED
+					|| deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED
+					|| deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATION_FAILED ) // for FAILED
 																											// OR
 																											// TERMINATION_FAILED
 																											// instances
@@ -1526,7 +1526,10 @@ public class MANOController {
 						+ " is " + deploymentdescriptor.getStatus(), compname);
 				logger.info("Following forcefull deletion. Status of " + deploymentdescriptor.getId() + " is "
 						+ deploymentdescriptor.getStatus());
-				force = true;
+				force = false;
+				/**
+				 * ctranoris: changed  on 20210324 making force always false.
+				 */
 			} else {
 				logger.info("Skipping deletion. Status of " + deploymentdescriptor.getId() + " is "
 						+ deploymentdescriptor.getStatus());
