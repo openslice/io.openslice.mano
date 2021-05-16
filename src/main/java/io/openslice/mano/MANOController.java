@@ -44,10 +44,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
-import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
-import OSM7Util.OSM7NSReq.OSM7NSRequirements;
-import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
@@ -67,10 +63,20 @@ import io.openslice.sol005nbi.ΑNSActionRequestPayload;
 import io.openslice.sol005nbi.ANSScaleRequestPayload;
 import io.openslice.centrallog.client.*;
 
+import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
+import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
+import OSM7Util.OSM7NSReq.OSM7NSRequirements;
+import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
+
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8VNFDExtractor;
 import OSM8Util.OSM8NSReq.OSM8NSRequirements;
 import OSM8Util.OSM8VNFReq.OSM8VNFRequirements;
+
+import OSM9Util.OSM9ArchiveExtractor.OSM9NSExtractor;
+import OSM9Util.OSM9ArchiveExtractor.OSM9VNFDExtractor;
+import OSM9Util.OSM9NSReq.OSM9NSRequirements;
+import OSM9Util.OSM9VNFReq.OSM9VNFRequirements;
 
 /**
  * @author ctranoris, ichatzis
@@ -1435,18 +1441,6 @@ public class MANOController {
 						tmpMANOProvider.getApiEndpoint(), tmpMANOProvider.getUsername(), tmpMANOProvider.getPassword(),
 						tmpMANOProvider.getProject());
 
-				// MANOStatus.setOsm5CommunicationStatusActive(null);
-//					JSONObject ns_instance_info = osm5Client.getNSInstanceInfo(deploymentdescriptor.getInstanceId());
-//					if (ns_instance_info != null) 
-//					{
-//						logger.info(ns_instance_info.toString());
-//						logger.info("Status change of deployment " + deploymentdescriptor.getName() + " with status " + deploymentdescriptor.getStatus());						
-//						CentralLogger.log( CLevel.INFO, "Status change of deployment "+deploymentdescriptor.getName()+" to "+deploymentdescriptor.getStatus());						
-//						deploymentdescriptor.setOperationalStatus(ns_instance_info.getString("operational-status"));
-//						deploymentdescriptor.setConfigStatus(ns_instance_info.getString("config-status"));
-//						deploymentdescriptor.setDetailedStatus(ns_instance_info.getString("detailed-status").replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-//						if( deploymentdescriptor.getOperationalStatus() != "terminating" && deploymentdescriptor.getOperationalStatus() != "terminated" )
-//						{
 				ResponseEntity<String> response = osmClient
 						.terminateNSInstanceNew(deploymentdescriptor.getInstanceId());
 				if (response == null || response.getStatusCode().is4xxClientError()
@@ -1478,16 +1472,7 @@ public class MANOController {
 					logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
 					aMANOClient.terminateInstanceSucceded(deploymentdescriptor_final);
 				}
-//						}
-//					}
-//					else
-//					{
-//						CentralLogger.log( CLevel.INFO, "Deployment "+deploymentdescriptor.getName()+" not found in OSM. Deletion skipped.");
-//						logger.error("Deployment "+deploymentdescriptor.getName()+" not found in OSM. Deletion skipped.");							
-//					}
 			} catch (Exception e) {
-				// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD termination
-				// action.");
 				CentralLogger.log(CLevel.ERROR,
 						"terminateNSFromMANOProvider, " + getExperimOBD(deploymentdescriptor).getObMANOprovider()
 								.getSupportedMANOplatform().getName() + " fails authentication. Aborting action.",
@@ -1631,7 +1616,15 @@ public class MANOController {
 	}
 
 	public String mapOSM8VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
-		VxFMetadata vxfMetadata = this.mapOSM7VNFD2Product(yamlFile);
+		VxFMetadata vxfMetadata = this.mapOSM8VNFD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();
+		String res = mapper.writeValueAsString(vxfMetadata);
+
+		return res;
+	}
+
+	public String mapOSM9VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
+		VxFMetadata vxfMetadata = this.mapOSM9VNFD2Product(yamlFile);
 		ObjectMapper mapper = new ObjectMapper();
 		String res = mapper.writeValueAsString(vxfMetadata);
 
@@ -1647,7 +1640,15 @@ public class MANOController {
 	}
 
 	public String mapOSM8NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
-		ExperimentMetadata vxfMetadata = this.mapOSM7NSD2Product(yamlFile);
+		ExperimentMetadata vxfMetadata = this.mapOSM8NSD2Product(yamlFile);
+		ObjectMapper mapper = new ObjectMapper();
+		String res = mapper.writeValueAsString(vxfMetadata);
+
+		return res;
+	}
+
+	public String mapOSM9NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
+		ExperimentMetadata vxfMetadata = this.mapOSM9NSD2Product(yamlFile);
 		ObjectMapper mapper = new ObjectMapper();
 		String res = mapper.writeValueAsString(vxfMetadata);
 
@@ -1732,6 +1733,45 @@ public class MANOController {
 		return prod;
 	}
 
+	public ExperimentMetadata mapOSM9NSD2Product(String yamlFile) {
+		ExperimentMetadata prod = new ExperimentMetadata();
+
+		// Get the nsd object out of the file info
+		Nsd ns;
+		try {
+			// We need to provide different implementations for each OSM version as this
+			// maps to a different version of NSD model.
+			ns = OSM8NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
+
+			prod.setName(ns.getName());
+			prod.setVersion(ns.getVersion());
+			prod.setVendor(ns.getVendor());
+			prod.setShortDescription(ns.getName());
+			prod.setLongDescription(ns.getDescription());
+
+			for (ConstituentVnfd v : ns.getConstituentVnfd()) {
+				ConstituentVxF cvxf = new ConstituentVxF();
+				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex()));
+				cvxf.setVnfdidRef((String) v.getVnfdIdRef());
+				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String) v.getVnfdIdRef());
+				cvxf.setVxfref(vxf);
+				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
+			}
+
+			// Get NS Requirements from the nsd
+			OSM9NSRequirements vr = new OSM9NSRequirements(ns);
+			// Store the requirements in HTML
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file
+			prod.setDescriptor(yamlFile);
+			prod.setIconsrc(ns.getLogo());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return prod;
+	}
+	
 	public VxFMetadata mapOSM7VNFD2Product(String yamlFile) {
 		VxFMetadata prod = new VxFMetadata();
 		// Get the vnfd object out of the file info
@@ -1824,7 +1864,53 @@ public class MANOController {
 		return prod;
 	}
 	
-	
+
+	public VxFMetadata mapOSM9VNFD2Product(String yamlFile) {
+		VxFMetadata prod = new VxFMetadata();
+		// Get the vnfd object out of the file info
+		org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd;
+		try {
+			// We need to provide different implementations for each OSM version as this
+			// maps to a different version of VNFD model.
+			vnfd = OSM9VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
+			if (vnfd == null) {
+				logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
+				return null;
+			}
+			// Get the name for the db
+			prod.setName(vnfd.getProductName());
+			prod.setVersion(vnfd.getVersion());
+			prod.setVendor(vnfd.getProvider());
+			prod.setShortDescription(vnfd.getProductName());
+			prod.setLongDescription(vnfd.getProductInfoDescription());
+
+			((VxFMetadata) prod).setValidationStatus(ValidationStatus.UNDER_REVIEW);
+			((VxFMetadata) prod).getVfimagesVDU().clear();// clear previous referenced images
+			for (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.vnfd.Vdu vdu : vnfd.getVdu().values()) {
+				String imageName = vdu.getSwImageDesc();
+				if ((imageName != null) && (!imageName.equals(""))) {
+					VFImage sm = new VFImage();
+					sm.setName(imageName);
+					((VxFMetadata) prod).getVfimagesVDU().add(sm);
+				}
+			}
+
+			// Get VNF Requirements from the vnfd
+			OSM9VNFRequirements vr = new OSM9VNFRequirements(vnfd);
+			// Store the requirements in HTML
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file
+			prod.setDescriptor(yamlFile);
+
+			prod.setIconsrc("");
+		} catch (IOException e) {
+			logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
+			e.printStackTrace();
+			return null;
+		}
+		return prod;
+	}
+		
 	public void getScaleAlert(String body)
 	{
 		System.out.println("Scaling message received with body");

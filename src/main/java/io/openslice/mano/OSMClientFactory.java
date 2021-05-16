@@ -26,6 +26,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 import OSM7NBIClient.OSM7Client;
 import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM8NBIClient.OSM8Client;
+import OSM9NBIClient.OSM9Client;
+import OSM9Util.OSM9ArchiveExtractor.OSM9NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.OSMUtil.OSMNSExtractor;
@@ -36,7 +38,7 @@ public class OSMClientFactory {
 	
 	public static OSMClient getOSMClient(String type,String apiEndpoint, String username, String password, String project_id) throws HttpStatusCodeException
 	{
-		String tokenEndpoint = "https://10.10.10.37:9999/osm/admin/v1/tokens/";
+		String tokenEndpoint = "https://10.10.10.41:9999/osm/admin/v1/tokens/";
 		String basePath = "/vnfpkgm/v1";
 		
 		switch(type)
@@ -45,6 +47,8 @@ public class OSMClientFactory {
 				return new OSM7Client(apiEndpoint,username,password,project_id);
 			case "OSMvEIGHT":
 				return new OSM8Client(apiEndpoint,username,password,project_id);
+			case "OSMvNINE":
+				return new OSM9Client(apiEndpoint,username,password,project_id);
 			case "GenericSOL005":
 				return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
 		}
@@ -59,6 +63,8 @@ public class OSMClientFactory {
 			return new OSM7NSExtractor(NSDescriptorFile);
 		case "OSMvEIGHT":
 			return new OSM8NSExtractor(NSDescriptorFile);
+		case "OSMvNINE":
+			return new OSM9NSExtractor(NSDescriptorFile);
 		}
 		return new OSM8NSExtractor(NSDescriptorFile);
 	}
@@ -70,6 +76,8 @@ public class OSMClientFactory {
 			case "OSMvSEVEN":
 				return true;	
 			case "OSMvEIGHT":
+				return true;				
+			case "OSMvNINE":
 				return true;				
 		}
 		return false;

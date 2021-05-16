@@ -241,6 +241,8 @@ public class MANORouteBuilder  extends RouteBuilder{
         	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvEIGHT"))
         	.bean(aMANOController, "mapOSM8VNFD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvNINE"))
+        	.bean(aMANOController, "mapOSM9VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
 
@@ -251,6 +253,8 @@ public class MANORouteBuilder  extends RouteBuilder{
     	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvEIGHT"))
     	.bean(aMANOController, "mapOSM8NSD2ProductEagerDataJson")
+        .when(header("OSMType").isEqualTo("OSMvNINE"))
+    	.bean(aMANOController, "mapOSM9NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("GenericSOL005"))
         	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
 
