@@ -29,6 +29,8 @@ import org.apache.commons.logging.LogFactory;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.nsd.Df;
+import org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.nsd.df.VnfProfile;
 import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
 import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.project.nsd.catalog.Nsd;
 import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.base.rev170228.vnfd.descriptor.Vdu;
@@ -1737,25 +1739,28 @@ public class MANOController {
 		ExperimentMetadata prod = new ExperimentMetadata();
 
 		// Get the nsd object out of the file info
-		Nsd ns;
+		org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd ns;
 		try {
 			// We need to provide different implementations for each OSM version as this
 			// maps to a different version of NSD model.
-			ns = OSM8NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
+			ns = OSM9NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
 
 			prod.setName(ns.getName());
 			prod.setVersion(ns.getVersion());
-			prod.setVendor(ns.getVendor());
+			prod.setVendor(ns.getDesigner());
 			prod.setShortDescription(ns.getName());
-			prod.setLongDescription(ns.getDescription());
+			prod.setLongDescription(ns.getName());
 
-			for (ConstituentVnfd v : ns.getConstituentVnfd()) {
+			for (Df v : ns.getDf().values()) {
 				ConstituentVxF cvxf = new ConstituentVxF();
-				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex()));
-				cvxf.setVnfdidRef((String) v.getVnfdIdRef());
-				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String) v.getVnfdIdRef());
-				cvxf.setVxfref(vxf);
-				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
+				for( VnfProfile q : v.getVnfProfile().values())
+				{
+					cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+					cvxf.setVnfdidRef((String) q.getVnfdId());
+					VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String) q.getVnfdId());
+					cvxf.setVxfref(vxf);
+					((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);					
+				}
 			}
 
 			// Get NS Requirements from the nsd
@@ -1764,7 +1769,7 @@ public class MANOController {
 			prod.setDescriptorHTML(vr.toHTML());
 			// Store the YAML file
 			prod.setDescriptor(yamlFile);
-			prod.setIconsrc(ns.getLogo());
+			prod.setIconsrc("");
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
