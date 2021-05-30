@@ -1752,9 +1752,9 @@ public class MANOController {
 			prod.setLongDescription(ns.getName());
 
 			for (Df v : ns.getDf().values()) {
-				ConstituentVxF cvxf = new ConstituentVxF();
 				for( VnfProfile q : v.getVnfProfile().values())
 				{
+					ConstituentVxF cvxf = new ConstituentVxF();
 					cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
 					cvxf.setVnfdidRef((String) q.getVnfdId());
 					VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String) q.getVnfdId());
