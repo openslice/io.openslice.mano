@@ -95,6 +95,9 @@ public class MANOController {
 
 	@Value("${spring.application.name}")
 	private String compname;
+	
+	@Autowired
+	private CentralLogger centralLogger;
 
 	public void onBoardVxFToMANOProviderByFile() throws Exception {
 
@@ -113,7 +116,7 @@ public class MANOController {
 		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
 		// This is the Deployment ID for the portal
 		vxfobd.setDeployId(UUID.randomUUID().toString());
-		CentralLogger.log(CLevel.INFO,
+		centralLogger.log(CLevel.INFO,
 				"Onboarding status change of VxF " + vxfobd.getVxf().getName() + " to " + vxfobd.getOnBoardingStatus(),
 				compname);
 		logger.info(
@@ -139,7 +142,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (Exception e) {
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
 
 			// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding
@@ -147,7 +150,7 @@ public class MANOController {
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			logger.error("Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus());
@@ -170,7 +173,7 @@ public class MANOController {
 			logger.error("VNFD Package Creation failed.");
 			// Set status
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -194,7 +197,7 @@ public class MANOController {
 				osmClient.deleteVNFDPackage(vnfd_id);
 				// Set status
 				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+				centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 						+ vxfobds.getOnBoardingStatus(), compname);
 				// Set the reason of the failure
 				vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -206,7 +209,7 @@ public class MANOController {
 			}
 
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 
 			vxfobds.setFeedbackMessage("OnBoarding Succeeded");
@@ -238,7 +241,7 @@ public class MANOController {
 		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
 		// This is the Deployment ID for the portal
 		vxfobd.setDeployId(UUID.randomUUID().toString());
-		CentralLogger.log(CLevel.INFO,
+		centralLogger.log(CLevel.INFO,
 				"Onboarding status change of VxF " + vxfobd.getVxf().getName() + " to " + vxfobd.getOnBoardingStatus(),
 				compname);
 		logger.info(
@@ -268,7 +271,7 @@ public class MANOController {
 			}
 		} catch (Exception e) {
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
 
 			// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding
@@ -276,7 +279,7 @@ public class MANOController {
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			logger.error("Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus());
@@ -299,7 +302,7 @@ public class MANOController {
 			logger.error("VNFD Package Creation failed.");
 			// Set status
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -321,7 +324,7 @@ public class MANOController {
 				osmClient.deleteVNFDPackage(vnfd_id);
 				// Set status
 				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+				centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 						+ vxfobds.getOnBoardingStatus(), compname);
 				// Set the reason of the failure
 				vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -333,7 +336,7 @@ public class MANOController {
 			}
 
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 
 			vxfobds.setFeedbackMessage("OnBoarding Succeeded");
@@ -362,7 +365,7 @@ public class MANOController {
 		vxfobd.setOnBoardingStatus(OnBoardingStatus.ONBOARDING);
 		// This is the Deployment ID for the portal
 		vxfobd.setDeployId(UUID.randomUUID().toString());
-		CentralLogger.log(CLevel.INFO,
+		centralLogger.log(CLevel.INFO,
 				"Onboarding status change of VxF " + vxfobd.getVxf().getName() + " to " + vxfobd.getOnBoardingStatus(),
 				compname);
 		logger.info(
@@ -388,7 +391,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (Exception e) {
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.", compname);
 
 			// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF OnBoarding
@@ -396,7 +399,7 @@ public class MANOController {
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(manoVersion + " communication failed. Aborting VxF OnBoarding action.");
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			logger.error("Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus());
@@ -419,7 +422,7 @@ public class MANOController {
 			logger.error("VNFD Package Creation failed.");
 			// Set status
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 			// Set the reason of the failure
 			vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -441,7 +444,7 @@ public class MANOController {
 				osmClient.deleteVNFDPackage(vnfd_id);
 				// Set status
 				vxfobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+				centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 						+ vxfobds.getOnBoardingStatus(), compname);
 				// Set the reason of the failure
 				vxfobds.setFeedbackMessage(response.getBody().toString());
@@ -453,7 +456,7 @@ public class MANOController {
 			}
 
 			vxfobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-			CentralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
+			centralLogger.log(CLevel.INFO, "Onboarding status change of VxF " + vxfobds.getVxf().getName() + " to "
 					+ vxfobds.getOnBoardingStatus(), compname);
 
 			vxfobds.setFeedbackMessage("OnBoarding Succeeded");
@@ -493,7 +496,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (HttpStatusCodeException e) {
 			logger.error("offBoardVxFFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"offBoardVxFFromMANOProvider, OSM5 fails authentication. Aborting VxF offboarding action.",
 					compname);
 			// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting VxF offboarding
@@ -528,7 +531,7 @@ public class MANOController {
 
 		// This is the Deployment ID for the portal
 		uexpobd.setDeployId(UUID.randomUUID().toString());
-		CentralLogger.log(CLevel.INFO, "Onboarding status change of Experiment " + uexpobd.getExperiment().getName()
+		centralLogger.log(CLevel.INFO, "Onboarding status change of Experiment " + uexpobd.getExperiment().getName()
 				+ " to " + uexpobd.getOnBoardingStatus(), compname);
 		logger.info("Onboarding status change of Experiment " + uexpobd.getExperiment().getName() + " to "
 				+ uexpobd.getOnBoardingStatus());
@@ -558,7 +561,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (Exception e) {
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion
+			centralLogger.log(CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion
 					+ " fails authentication. Aborting NSD Onboarding action.", compname);
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion
 					+ " fails authentication. Aborting NSD Onboarding action.");
@@ -567,7 +570,7 @@ public class MANOController {
 			// Set the reason of the failure
 			uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
 			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.ERROR, "Onboarding Status change of Experiment "
+			centralLogger.log(CLevel.ERROR, "Onboarding Status change of Experiment "
 					+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 			logger.error("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 					+ uexpobds.getOnBoardingStatus());
@@ -584,7 +587,7 @@ public class MANOController {
 				|| response.getStatusCode().is5xxServerError()) {
 			logger.error("Creation of NSD Package Content failed. Deleting NSD Package.");
 			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+			centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 					+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 			// Set the reason of the failure
 			uexpobds.setFeedbackMessage(response.getBody().toString());
@@ -603,7 +606,7 @@ public class MANOController {
 				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
 				osmClient.deleteNSDPackage(nsd_id);
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+				centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 						+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 				logger.error("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 						+ uexpobds.getOnBoardingStatus());
@@ -620,7 +623,7 @@ public class MANOController {
 				return;
 			} else {
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-				CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+				centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 						+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 				logger.info("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 						+ uexpobds.getOnBoardingStatus());
@@ -651,7 +654,7 @@ public class MANOController {
 
 		// This is the Deployment ID for the portal
 		uexpobd.setDeployId(UUID.randomUUID().toString());
-		CentralLogger.log(CLevel.INFO, "Onboarding status change of Experiment " + uexpobd.getExperiment().getName()
+		centralLogger.log(CLevel.INFO, "Onboarding status change of Experiment " + uexpobd.getExperiment().getName()
 				+ " to " + uexpobd.getOnBoardingStatus(), compname);
 		logger.info("Onboarding status change of Experiment " + uexpobd.getExperiment().getName() + " to "
 				+ uexpobd.getOnBoardingStatus());
@@ -681,7 +684,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (Exception e) {
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion
+			centralLogger.log(CLevel.ERROR, "onBoardNSDFromMANOProvider, " + manoVersion
 					+ " fails authentication. Aborting NSD Onboarding action.", compname);
 			logger.error("onBoardNSDFromMANOProvider, " + manoVersion
 					+ " fails authentication. Aborting NSD Onboarding action.");
@@ -690,7 +693,7 @@ public class MANOController {
 			// Set the reason of the failure
 			uexpobds.setFeedbackMessage("OSM communication failed. Aborting NSD Onboarding action.");
 			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.ERROR, "Onboarding Status change of Experiment "
+			centralLogger.log(CLevel.ERROR, "Onboarding Status change of Experiment "
 					+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 			logger.error("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 					+ uexpobds.getOnBoardingStatus());
@@ -707,7 +710,7 @@ public class MANOController {
 				|| response.getStatusCode().is5xxServerError()) {
 			logger.error("Creation of NSD Package Content failed. Deleting NSD Package.");
 			uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+			centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 					+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 			// Set the reason of the failure
 			uexpobds.setFeedbackMessage(response.getBody().toString());
@@ -728,7 +731,7 @@ public class MANOController {
 				logger.error("Upload of NSD Package Content failed. Deleting NSD Package.");
 				osmClient.deleteNSDPackage(nsd_id);
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+				centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 						+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 				logger.error("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 						+ uexpobds.getOnBoardingStatus());
@@ -742,7 +745,7 @@ public class MANOController {
 				return;
 			} else {
 				uexpobds.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
-				CentralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
+				centralLogger.log(CLevel.INFO, "Onboarding Status change of Experiment "
 						+ uexpobds.getExperiment().getName() + " to " + uexpobds.getOnBoardingStatus(), compname);
 				logger.info("Onboarding Status change of Experiment " + uexpobds.getExperiment().getName() + " to "
 						+ uexpobds.getOnBoardingStatus());
@@ -776,7 +779,7 @@ public class MANOController {
 			// MANOStatus.setOsm5CommunicationStatusActive(null);
 		} catch (HttpStatusCodeException e) {
 			logger.error("offBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"offBoardNSDFromMANOProvider, " + manoVersion + " fails authentication. Aborting action.",
 					compname);
 			// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NSD offboarding
@@ -835,7 +838,7 @@ public class MANOController {
 
 	public void checkAndUpdateRunningDeploymentDescriptors() {
 		logger.info("Update Deployment Descriptors");
-		// CentralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!",
+		// centralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!",
 		// compname);
 		try {
 			List<DeploymentDescriptor> runningDeploymentDescriptors = aMANOClient
@@ -861,7 +864,7 @@ public class MANOController {
 							// MANOStatus.setOsm5CommunicationStatusActive(null);
 						} catch (Exception e) {
 							logger.error(manoVersion + " fails authentication");
-							CentralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
+							centralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
 							// MANOStatus.setOsm5CommunicationStatusFailed(null);
 							return;
 						}
@@ -873,7 +876,7 @@ public class MANOController {
 					// delete.
 					if (ns_instance_info == null) {
 						deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-						CentralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+						centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
 								+ " to " + deployment_tmp.getStatus(), compname);
 						logger.info("NS not found in OSM. Status change of deployment " + deployment_tmp.getName()
 								+ " to " + deployment_tmp.getStatus());
@@ -940,7 +943,7 @@ public class MANOController {
 														.replaceAll("\\\\", ""))) {
 									logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
 											+ deployment_tmp.getStatus());
-									CentralLogger.log(CLevel.INFO, "Status change of deployment "
+									centralLogger.log(CLevel.INFO, "Status change of deployment "
 											+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
 									deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -968,7 +971,7 @@ public class MANOController {
 								deployment_tmp.setStatus(DeploymentDescriptorStatus.RUNNING);
 								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
 										+ deployment_tmp.getStatus());
-								CentralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus(), compname);
 								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -985,7 +988,7 @@ public class MANOController {
 								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
 								deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATED);
-								CentralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus(), compname);
 								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
 										+ deployment_tmp.getStatus());
@@ -998,7 +1001,7 @@ public class MANOController {
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
 									&& deployment_tmp.getOperationalStatus().equals("failed")) {
 								deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED);
-								CentralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus(), compname);
 								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
 										+ deployment_tmp.getStatus());
@@ -1011,7 +1014,7 @@ public class MANOController {
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING
 									&& deployment_tmp.getOperationalStatus().equals("failed")) {
 								deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
-								CentralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus(), compname);
 								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
 										+ deployment_tmp.getStatus());
@@ -1106,7 +1109,7 @@ public class MANOController {
 			} catch (Exception e) {
 				logger.error("deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 						+ " fails authentication! Aborting action on NS.");
-				CentralLogger.log(CLevel.ERROR,
+				centralLogger.log(CLevel.ERROR,
 						"deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 								+ " fails authentication! Aborting action on NS.",
 						compname);
@@ -1180,7 +1183,7 @@ public class MANOController {
 		} catch (Exception e) {
 			logger.error("deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 					+ " fails authentication! Aborting action on NS.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 							+ " fails authentication! Aborting action on NS.",
 					compname);
@@ -1247,7 +1250,7 @@ public class MANOController {
 			} catch (Exception e) {
 				logger.error("deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 						+ " fails authentication! Aborting action on NS.");
-				CentralLogger.log(CLevel.ERROR,
+				centralLogger.log(CLevel.ERROR,
 						"deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 								+ " fails authentication! Aborting action on NS.",
 						compname);
@@ -1313,7 +1316,7 @@ public class MANOController {
 		} catch (Exception e) {
 			logger.error("deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 					+ " fails authentication! Aborting deployment of NSD.");
-			CentralLogger.log(CLevel.ERROR,
+			centralLogger.log(CLevel.ERROR,
 					"deployNSDToMANOProvider, " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 							+ " fails authentication! Aborting deployment of NSD.",
 					compname);
@@ -1349,7 +1352,7 @@ public class MANOController {
 				|| ns_instance_creation_entity.getStatusCode().is5xxServerError()) {
 			// NS instance creation failed
 			deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
-			CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+			centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus(), compname);
 			logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus());
@@ -1396,7 +1399,7 @@ public class MANOController {
 					|| instantiate_ns_instance_entity.getStatusCode().is5xxServerError()) {
 				// NS Instantiation failed
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
-				CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
 				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
@@ -1414,7 +1417,7 @@ public class MANOController {
 						instantiate_ns_instance_entity.getBody());
 				deploymentdescriptor.setNsLcmOpOccId(instantiate_ns_instance_entity_json_obj.getString("id"));
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.INSTANTIATING);
-				CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
 				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
@@ -1448,7 +1451,7 @@ public class MANOController {
 				if (response == null || response.getStatusCode().is4xxClientError()
 						|| response.getStatusCode().is5xxServerError()) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
-					CentralLogger.log(CLevel.ERROR, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.ERROR, "Status change of deployment " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
 					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
@@ -1462,7 +1465,7 @@ public class MANOController {
 				} else {
 					// NS Termination succeeded
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.TERMINATING);
-					CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
 					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
@@ -1475,7 +1478,7 @@ public class MANOController {
 					aMANOClient.terminateInstanceSucceded(deploymentdescriptor_final);
 				}
 			} catch (Exception e) {
-				CentralLogger.log(CLevel.ERROR,
+				centralLogger.log(CLevel.ERROR,
 						"terminateNSFromMANOProvider, " + getExperimOBD(deploymentdescriptor).getObMANOprovider()
 								.getSupportedMANOplatform().getName() + " fails authentication. Aborting action.",
 						compname);
@@ -1509,7 +1512,7 @@ public class MANOController {
 																											// TERMINATION_FAILED
 																											// instances
 			{
-				CentralLogger.log(CLevel.INFO, "Following forcefull deletion. Status of " + deploymentdescriptor.getId()
+				centralLogger.log(CLevel.INFO, "Following forcefull deletion. Status of " + deploymentdescriptor.getId()
 						+ " is " + deploymentdescriptor.getStatus(), compname);
 				logger.info("Following forcefull deletion. Status of " + deploymentdescriptor.getId() + " is "
 						+ deploymentdescriptor.getStatus());
@@ -1533,7 +1536,7 @@ public class MANOController {
 			} catch (Exception e) {
 				logger.error(aMANOplatform + " fails authentication");
 				// MANOStatus.setOsm5CommunicationStatusFailed(" Aborting NS deletion action.");
-				CentralLogger.log(CLevel.ERROR, aMANOplatform + " fails authentication", compname);
+				centralLogger.log(CLevel.ERROR, aMANOplatform + " fails authentication", compname);
 				deploymentdescriptor.setFeedback(aMANOplatform + " communication failed. Aborting NS deletion action.");
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
 				aMANOClient.deleteInstanceFailed(deploymentdescriptor);
@@ -1544,7 +1547,7 @@ public class MANOController {
 			if (deletion_response.getStatusCode().is4xxClientError()
 					|| deletion_response.getStatusCode().is5xxServerError()) {
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.DELETION_FAILED);
-				CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
 				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
@@ -1558,7 +1561,7 @@ public class MANOController {
 			} else if (deletion_response.getStatusCode().is2xxSuccessful()) {
 				if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATED) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.COMPLETED);
-					CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
 					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
@@ -1571,7 +1574,7 @@ public class MANOController {
 				if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED
 						|| deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATION_FAILED) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-					CentralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
 					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
@@ -1583,7 +1586,7 @@ public class MANOController {
 				}
 			} else {
 				try {
-					CentralLogger.log(CLevel.ERROR,
+					centralLogger.log(CLevel.ERROR,
 							"Status change of deployment " + deploymentdescriptor.getName() + " to "
 									+ deploymentdescriptor.getStatus() + " replied with false code "
 									+ deletion_response.getStatusCodeValue() + "and body" + deletion_response.getBody(),
@@ -1592,7 +1595,7 @@ public class MANOController {
 							+ deploymentdescriptor.getStatus() + " replied with false code "
 							+ deletion_response.getStatusCodeValue() + "and body" + deletion_response.getBody());
 				} catch (Exception e) {
-					CentralLogger.log(CLevel.ERROR, "Deletion failed with message" + e.getMessage(), compname);
+					centralLogger.log(CLevel.ERROR, "Deletion failed with message" + e.getMessage(), compname);
 					logger.error("Deletion failed with message" + e.getMessage());
 				}
 			}
