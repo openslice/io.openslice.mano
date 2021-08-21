@@ -836,6 +836,23 @@ public class MANOController {
 	}	
 	
 
+	public void checkAndUpdateMANOProviders() {
+		// Get MANO Providers
+		List<MANOprovider> mps = aMANOClient.getMANOproviders();
+		// For each MANO Provider
+		for (int i = 0; i < mps.size(); i++) 
+		{
+			// Get VIMs
+			// Update VIMs list
+			// Get VNFs
+			// Update VNFs list
+			// Get NSDs
+			// Update NSDs list
+			// Get Deployments
+			// Update Deployments list
+		}
+	}
+	
 	public void checkAndUpdateRunningDeploymentDescriptors() {
 		logger.info("Update Deployment Descriptors");
 		// centralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!",
