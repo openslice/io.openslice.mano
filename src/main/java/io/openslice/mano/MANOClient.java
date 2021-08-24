@@ -47,7 +47,9 @@ import com.fasterxml.jackson.datatype.hibernate5.Hibernate5Module;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
+import io.openslice.model.Infrastructure;
 import io.openslice.model.MANOprovider;
+import io.openslice.model.PortalUser;
 import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
 import io.openslice.tmf.am642.model.AffectedService;
@@ -89,9 +91,8 @@ public class MANOClient {
 		String ret = template.requestBody("activemq:queue:getVxFOnBoardedDescriptorByID", id, String.class);
 
 		VxFOnBoardedDescriptor vxf_obd = null;
-		// Map object to ExperimentMetadata
+		// Map object to VxFOnBoardedDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			vxf_obd = mapper.readValue(ret, new TypeReference<VxFOnBoardedDescriptor>() {
@@ -118,9 +119,8 @@ public class MANOClient {
 				String.class);
 
 		List<DeploymentDescriptor> nsds = null;
-		// Map object to ExperimentMetadata
+		// Map object to DeploymentDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			nsds = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
@@ -145,13 +145,100 @@ public class MANOClient {
 		return nsds;
 	}
 
+	public List<Infrastructure> getInfrastructures() {
+		String ret = template.requestBody("activemq:queue:getInfrastructures", "", String.class);
+
+		List<Infrastructure> infrastructures = null;
+		// Map object to Infrastructure
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			infrastructures = mapper.readValue(ret, new TypeReference<List<Infrastructure>>() {
+			});
+			for (int i = 0; i < infrastructures.size(); i++) {
+				logger.info("Infrastructure " + infrastructures.get(i).getName() + " with VIM id:"
+						+ infrastructures.get(i).getVIMid() + " is loaded");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return infrastructures;
+	}
+
+	public List<VxFMetadata> getVnfds() {
+		String ret = template.requestBody("activemq:queue:getVnfds", "", String.class);
+		List<VxFMetadata> vxfs = null;
+		// Map object to Infrastructure
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			vxfs = mapper.readValue(ret, new TypeReference<List<VxFMetadata>>() {
+			});
+			for (int i = 0; i < vxfs.size(); i++) {
+				logger.info("VxFMetadata " + vxfs.get(i).getName() + " with VxF id:"
+						+ vxfs.get(i).getUuid() + " is loaded");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return vxfs;
+	}
+
+	public List<ExperimentMetadata> getExperiments() {
+		String ret = template.requestBody("activemq:queue:getExperiments", "", String.class);
+		List<ExperimentMetadata> experiments = null;
+		// Map object to Infrastructure
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			experiments = mapper.readValue(ret, new TypeReference<List<ExperimentMetadata>>() {
+			});
+			for (int i = 0; i < experiments.size(); i++) {
+				logger.info("Experiment " + experiments.get(i).getName() + " with Experiment id:"
+						+ experiments.get(i).getUuid() + " is loaded");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return experiments;
+	}
+
 	public List<DeploymentDescriptor> getDeploymentsToInstantiate() {
 		String ret = template.requestBody("activemq:queue:getDeploymentsToInstantiate", "", String.class);
 
 		List<DeploymentDescriptor> DeploymentDescriptorsToRun = null;
-		// Map object to ExperimentMetadata
+		// Map object to Infrastructure
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			DeploymentDescriptorsToRun = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
@@ -181,9 +268,8 @@ public class MANOClient {
 		String ret = template.requestBody("activemq:queue:getDeploymentsToBeCompleted", "", String.class);
 
 		List<DeploymentDescriptor> DeploymentDescriptorsToComplete = null;
-		// Map object to ExperimentMetadata
+		// Map object to DeploymentDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			DeploymentDescriptorsToComplete = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
@@ -208,13 +294,42 @@ public class MANOClient {
 		return DeploymentDescriptorsToComplete;
 	}
 
+	public List<DeploymentDescriptor> getAllDeployments() {
+		String ret = template.requestBody("activemq:queue:getAllDeployments", "", String.class);
+
+		List<DeploymentDescriptor> deploymentDescriptors = null;
+		// Map object to DeploymentDescriptor
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			deploymentDescriptors = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
+			});
+			for (DeploymentDescriptor d : deploymentDescriptors) {
+				// Launch the deployment
+				logger.info("The deployment with name  " + d.getName() + " was found.");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return deploymentDescriptors;
+	}
+
 	public List<DeploymentDescriptor> getDeploymentsToBeDeleted() {
 		String ret = template.requestBody("activemq:queue:getDeploymentsToBeDeleted", "", String.class);
 		logger.info("Deployments to be deleted: " + ret);
 		List<DeploymentDescriptor> DeploymentDescriptorsToDelete = null;
-		// Map object to ExperimentMetadata
+		// Map object to DeploymentDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			DeploymentDescriptorsToDelete = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
@@ -261,14 +376,14 @@ public class MANOClient {
 		// .createFluentProducerTemplate().to("activemq:queue:getRunningInstantiatingAndTerminatingDeployments?multipleConsumers=true");
 		logger.info("Message Received from AMQ:" + ret);
 		DeploymentDescriptor dd = null;
-		// Map object to ExperimentMetadata
+		// Map object to DeploymentDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
 			if (dd.getExperiment() != null) {
-				dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));				
 				logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
 			}
 		} catch (JsonParseException e) {
@@ -293,14 +408,14 @@ public class MANOClient {
 
 		logger.info("Message Received from AMQ:" + ret);
 		DeploymentDescriptor dd = null;
-		// Map object to ExperimentMetadata
+		// Map object to DeploymentDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
 			if (dd.getExperiment() != null) {
-				dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));
 				logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
 			}
 		} catch (JsonParseException e) {
@@ -324,9 +439,8 @@ public class MANOClient {
 		String ret = template.requestBody("activemq:queue:getVxFByID", id, String.class);
 		logger.info("Message Received from AMQ:" + ret);
 		VxFMetadata vxfm = null;
-		// Map object to ExperimentMetadata
+		// Map object to VxFMetadata
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			vxfm = mapper.readValue(ret, VxFMetadata.class);
@@ -350,9 +464,8 @@ public class MANOClient {
 		String ret = template.requestBody("activemq:queue:getVxFByName", name, String.class);
 		logger.info("Message Received from AMQ:" + ret);
 		VxFMetadata vxfm = null;
-		// Map object to ExperimentMetadata
+		// Map object to VxFMetadata
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			vxfm = mapper.readValue(ret, VxFMetadata.class);
@@ -378,7 +491,6 @@ public class MANOClient {
 		ExperimentMetadata expm = null;
 		// Map object to ExperimentMetadata
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			expm = mapper.readValue(ret, ExperimentMetadata.class);
@@ -398,39 +510,38 @@ public class MANOClient {
 		return expm;
 	}
 
-	private ExperimentMetadata getExperimentById(long id) {
-		String ret = template.requestBody("activemq:queue:getNSDByID", id, String.class);
-		logger.info("Message Received from AMQ:" + ret);
-		ExperimentMetadata em = null;
-		// Map object to ExperimentMetadata
-		try {
-			// Map object to ExperimentMetadata
-			ObjectMapper mapper = new ObjectMapper();
-			logger.info("From ActiveMQ:" + ret.toString());
-			em = mapper.readValue(ret, ExperimentMetadata.class);
-		} catch (JsonParseException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.error(e.getMessage());
-		} catch (JsonMappingException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-			logger.error(e1.getMessage());
-		} catch (IOException e11) {
-			// TODO Auto-generated catch block
-			e11.printStackTrace();
-			logger.error(e11.getMessage());
-		}
-		return em;
-	}
+	// Duplicate of getNSDById
+	//private ExperimentMetadata getExperimentById(long id) {
+	//	String ret = template.requestBody("activemq:queue:getNSDByID", id, String.class);
+	//	logger.info("Message Received from AMQ:" + ret);
+	//	ExperimentMetadata em = null;
+	//	// Map object to ExperimentMetadata
+	//	try {
+	//		ObjectMapper mapper = new ObjectMapper();
+	//		logger.info("From ActiveMQ:" + ret.toString());
+	//		em = mapper.readValue(ret, ExperimentMetadata.class);
+	//	} catch (JsonParseException e) {
+	//		// TODO Auto-generated catch block
+	//		e.printStackTrace();
+	//		logger.error(e.getMessage());
+	//	} catch (JsonMappingException e1) {
+	//		// TODO Auto-generated catch block
+	//		e1.printStackTrace();
+	//		logger.error(e1.getMessage());
+	//	} catch (IOException e11) {
+	//		// TODO Auto-generated catch block
+	//		e11.printStackTrace();
+	//		logger.error(e11.getMessage());
+	//	}
+	//	return em;
+	//}
 
 	private VxFOnBoardedDescriptor getVxFOnBoardedDescriptorById(long id) {
 		String ret = template.requestBody("activemq:queue:getVxFOBDByID", id, String.class);
 		logger.info("Message Received from AMQ:" + ret);
 		VxFOnBoardedDescriptor vxfobd = null;
-		// Map object to ExperimentMetadata
+		// Map object to VxFOnBoardedDescriptor
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			vxfobd = mapper.readValue(ret, VxFOnBoardedDescriptor.class);
@@ -490,6 +601,226 @@ public class MANOClient {
 			e11.printStackTrace();
 		}
 		return vxfd;
+	}
+
+	public Infrastructure addInfrastructure(Infrastructure infrastructure2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String infrastructure_serialized = null;
+		try {
+			infrastructure_serialized = mapper.writeValueAsString(infrastructure2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + infrastructure_serialized + " to addInfrastructure from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:addInfrastructure", infrastructure_serialized, String.class);
+		logger.info("Message Received for addInstrastructure from AMQ:" + ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		Infrastructure infrastructure = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			infrastructure = mapper.readValue(ret, Infrastructure.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return infrastructure;
+	}
+
+
+	public PortalUser getPortalUserByUsername(String username) {
+		
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		
+		logger.info("Sending Message " + username + " to getPortalUserByUsername from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:getPortalUserByUsername", username, String.class);
+		logger.info("Message Received for getPortalUserByUsername from AMQ:" + ret);
+
+		PortalUser portaluser = null;
+		try {
+			// Map object to PortalUser
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			portaluser = mapper.readValue(ret, PortalUser.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return portaluser;
+	}	
+	
+	public VxFMetadata addVxFMetadata(VxFMetadata vxfmetadata2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String vxfmetadata_serialized = null;
+		try {
+			vxfmetadata_serialized = mapper.writeValueAsString(vxfmetadata2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + vxfmetadata_serialized + " to addVxFMetadata from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:addVxFMetadata", vxfmetadata_serialized, String.class);
+		logger.info("Message Received for addVxFMetadata from AMQ:" + ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		VxFMetadata vxfmetadata = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			vxfmetadata = mapper.readValue(ret, VxFMetadata.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return vxfmetadata;
+	}
+
+	public ExperimentMetadata addExperimentMetadata(ExperimentMetadata experimentmetadata2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String experimentmetadata_serialized = null;
+		try {
+			experimentmetadata_serialized = mapper.writeValueAsString(experimentmetadata2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + experimentmetadata_serialized + " to addExperimentMetadata from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:addExperimentMetadata", experimentmetadata_serialized, String.class);
+		logger.info("Message Received for addExperimentMetadata from AMQ:" + ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		ExperimentMetadata experimentmetadata = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			experimentmetadata = mapper.readValue(ret, ExperimentMetadata.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return experimentmetadata;
+	}
+
+	public VxFOnBoardedDescriptor addVxFOnBoardedDescriptor(VxFOnBoardedDescriptor vxfonboardeddescriptor2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String vxfonboardeddescriptor_serialized = null;
+		try {
+			vxfonboardeddescriptor_serialized = mapper.writeValueAsString(vxfonboardeddescriptor2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + vxfonboardeddescriptor_serialized + " to addVxFOnBoardedDescriptor from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:addVxFOnBoardedDescriptor", vxfonboardeddescriptor_serialized, String.class);
+		logger.info("Message Received for addVxFOnBoardedDescriptor from AMQ:" + ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		VxFOnBoardedDescriptor vxfonboardeddescriptor = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			vxfonboardeddescriptor = mapper.readValue(ret, VxFOnBoardedDescriptor.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return vxfonboardeddescriptor;
+	}
+
+	public ExperimentOnBoardDescriptor addExperimentOnBoardedDescriptor(ExperimentOnBoardDescriptor experimentonboardeddescriptor2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String experimentonboardeddescriptor_serialized = null;
+		try {
+			experimentonboardeddescriptor_serialized = mapper.writeValueAsString(experimentonboardeddescriptor2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.info("Sending Message " + experimentonboardeddescriptor_serialized + " to addExperimentOnBoardDescriptor from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:addExperimentOnBoardedDescriptor", experimentonboardeddescriptor_serialized, String.class);
+		logger.info("Message Received for addExperimentOnBoardedDescriptor from AMQ:" + ret);
+
+		// Get the response and Map object to ExperimentMetadata
+		ExperimentOnBoardDescriptor experimentonboardeddescriptor = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			experimentonboardeddescriptor = mapper.readValue(ret, ExperimentOnBoardDescriptor.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return experimentonboardeddescriptor;
 	}
 
 	public ExperimentOnBoardDescriptor updateExperimentOnBoardDescriptor(ExperimentOnBoardDescriptor expobd2send) {
@@ -552,11 +883,12 @@ public class MANOClient {
 		DeploymentDescriptor dd = null;
 		// Get the response and Map object to ExperimentMetadata
 		try {
-			// Map object to ExperimentMetadata
+			// Map object to DeploymentDescriptor
 			mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
-			dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+			//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
+			dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));
 			logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -571,17 +903,16 @@ public class MANOClient {
 		return dd;
 	}
 
-	public List<MANOprovider> getMANOproviders()
-	{
-		String ret = template.requestBody("activemq:queue:getMANOProviderByID", "", String.class);
-		
+	public List<MANOprovider> getMANOproviders() {
+		String ret = template.requestBody("activemq:queue:getMANOProviders", "", String.class);
+
 		List<MANOprovider> mps = null;
-		// Map object to ExperimentMetadata
+		// Map object to MANOprovider
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
-			mps = mapper.readValue(ret, new TypeReference<List<MANOprovider>>() {});
+			mps = mapper.readValue(ret, new TypeReference<List<MANOprovider>>() {
+			});
 			for (int i = 0; i < mps.size(); i++) {
 				logger.info("Found EndPoint " + mps.get(i).getApiEndpoint());
 			}
@@ -598,9 +929,9 @@ public class MANOClient {
 			e11.printStackTrace();
 			logger.error(e11.getMessage());
 		}
-		return mps;		
+		return mps;
 	}
- 	
+
 	// Update the data from the portal api (database)
 	public MANOprovider getMANOproviderByID(long id) {
 		String ret = template.requestBody("activemq:queue:getMANOProviderByID", id, String.class);
@@ -608,9 +939,8 @@ public class MANOClient {
 		// .createFluentProducerTemplate().to("activemq:queue:getRunningInstantiatingAndTerminatingDeployments?multipleConsumers=true");
 
 		MANOprovider mp = null;
-		// Map object to ExperimentMetadata
+		// Map object to MANOprovider
 		try {
-			// Map object to ExperimentMetadata
 			ObjectMapper mapper = new ObjectMapper();
 			logger.info("From ActiveMQ:" + ret.toString());
 			mp = mapper.readValue(ret, MANOprovider.class);
@@ -723,7 +1053,9 @@ public class MANOClient {
 
 	/**
 	 * 
-	 * Compare previous last known action with the last one. We ignore any intermediate actions
+	 * Compare previous last known action with the last one. We ignore any
+	 * intermediate actions
+	 * 
 	 * @param deployment_tmp
 	 * @param previous
 	 * @param current
@@ -731,23 +1063,19 @@ public class MANOClient {
 	 */
 	public String alertOnScaleOpsList(DeploymentDescriptor deployment_tmp, String previous, String current) {
 
-		
 		try {
-			
 
-			JSONObject prevObj = new JSONObject( previous );
+			JSONObject prevObj = new JSONObject(previous);
 
 			JSONArray array2 = new JSONArray(current);
-			JSONObject currentLastObj = array2.getJSONObject( array2.length() - 1 );
-			
-			
-			if ( !prevObj.get("id").equals( currentLastObj.get("id") ) ) {
-				JSONObject obj2 = currentLastObj;
-				if ( (obj2.get("lcmOperationType").equals("scale")) && 
-						 (!obj2.get("operationState").equals("FAILED"))) {
+			JSONObject currentLastObj = array2.getJSONObject(array2.length() - 1);
 
-					logger.info("Sending An AlertCreate with details the body "
-							+ obj2.get("operationParams").toString());
+			if (!prevObj.get("id").equals(currentLastObj.get("id"))) {
+				JSONObject obj2 = currentLastObj;
+				if ((obj2.get("lcmOperationType").equals("scale")) && (!obj2.get("operationState").equals("FAILED"))) {
+
+					logger.info(
+							"Sending An AlertCreate with details the body " + obj2.get("operationParams").toString());
 
 					try {
 						AlarmCreate a = new AlarmCreate();
@@ -761,22 +1089,20 @@ public class MANOClient {
 						a.setIsRootCause(true);
 						a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
 						String scaletype = "";
-						if (obj2.toString().contains( "SCALE_IN") ) {
-							scaletype = "SCALE_IN";								
-						}else {
-							scaletype = "SCALE_OUT";								
+						if (obj2.toString().contains("SCALE_IN")) {
+							scaletype = "SCALE_IN";
+						} else {
+							scaletype = "SCALE_OUT";
 						}
-						a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() 
-						+ ";" + "InstanceId=" + deployment_tmp.getInstanceId() 
-						+ ";" + "scaletype=" + scaletype);
+						a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() + ";" + "InstanceId="
+								+ deployment_tmp.getInstanceId() + ";" + "scaletype=" + scaletype);
 						Comment comment = new Comment();
 						comment.setTime(OffsetDateTime.now(ZoneOffset.UTC));
 						comment.setSystemId(compname);
-						
-						
-						a.setSpecificProblem("action=" + scaletype );
-						
-						comment.setComment("Scale Operation " + scaletype + ". " + a.getAlarmDetails() );
+
+						a.setSpecificProblem("action=" + scaletype);
+
+						comment.setComment("Scale Operation " + scaletype + ". " + a.getAlarmDetails());
 						a.addCommentItem(comment);
 
 						String response = alarmsService.createAlarm(a);
@@ -791,82 +1117,10 @@ public class MANOClient {
 				return currentLastObj.toString();
 
 			}
-			
-				
 		} catch (JSONException e) {
 			logger.info("Crashed during alertOnScaleOpsList" + e.getMessage());
 		}
-		
-		
-		
-
 		return previous;
-		
-		
-		
-//		try {
-//			JSONArray array = new JSONArray(previous);
-//			JSONArray array2 = new JSONArray(current);
-//			if (array.length() < array2.length()) {
-//				for (int i = array.length() - 1; i < array2.length(); ++i) {
-//					JSONObject obj2 = array2.getJSONObject(i);
-//					if ( (obj2.get("lcmOperationType").equals("scale")) && 
-//							 (!obj2.get("operationState").equals("FAILED"))) {
-////"operationState": "FAILED",
-////		        		logger.info("Sending to seda:nsd.scalealert the body "+obj2.get("operationParams").toString());
-////		        		FluentProducerTemplate template = contxt.createFluentProducerTemplate().to("seda:nsd.scalealert?multipleConsumers=true");
-////			    		template.withBody( obj2.get("operationParams").toString()).asyncSend();
-////		        		logger.info("Message sent to seda:nsd.scalealert");
-//
-//						logger.info("Sending An AlertCreate with details the body "
-//								+ obj2.get("operationParams").toString());
-//
-//						try {
-//							AlarmCreate a = new AlarmCreate();
-//							a.setPerceivedSeverity(PerceivedSeverityType.critical.name());
-//							a.setState(AlarmStateType.raised.name());
-//							a.setAckState("unacknowledged");
-//							a.setAlarmRaisedTime(OffsetDateTime.now(ZoneOffset.UTC).toString());
-//							a.setSourceSystemId(compname);
-//							a.setAffectedService(new ArrayList<>());
-//							a.setAlarmType(AlarmType.qualityOfServiceAlarm.name());
-//							a.setIsRootCause(true);
-//							a.setProbableCause(ProbableCauseType.thresholdCrossed.name());
-//							String scaletype = "";
-//							if (obj2.toString().contains( "SCALE_IN") ) {
-//								scaletype = "SCALE_IN";								
-//							}else {
-//								scaletype = "SCALE_OUT";								
-//							}
-//							a.setAlarmDetails("DeploymentRequestID=" + deployment_tmp.getId() 
-//							+ ";" + "InstanceId=" + deployment_tmp.getInstanceId() 
-//							+ ";" + "scaletype=" + scaletype);
-//							Comment comment = new Comment();
-//							comment.setTime(OffsetDateTime.now(ZoneOffset.UTC));
-//							comment.setSystemId(compname);
-//							
-//							
-//							a.setSpecificProblem("action=" + scaletype );
-//							
-//							comment.setComment("Scale Operation " + scaletype + " on NSD with DeploymentRequestID="
-//									+ deployment_tmp.getId());
-//							a.addCommentItem(comment);
-//
-//							String response = alarmsService.createAlarm(a);
-//
-//							logger.info("Message sent to AlertCreate response=" + response);
-//						} catch (IOException e) {
-//							// TODO Auto-generated catch block
-//							e.printStackTrace();
-//						}
-//
-//					}
-//
-//				}
-//			}
-//		} catch (JSONException e) {
-//			logger.info("Crashed during alertOnScaleOpsList" + e.getMessage());
-//		}
 	}
 
 }

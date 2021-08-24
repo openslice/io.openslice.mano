@@ -142,6 +142,7 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		**********************************************************************************************
 		
 		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
+		from("timer://checkAndUpdateMANOProvidersResources?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateMANOProvidersResources").stop();
 		
 		// THESE SEND THE DeploymentDescriptor Object to Bugzilla for status updates		
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 
