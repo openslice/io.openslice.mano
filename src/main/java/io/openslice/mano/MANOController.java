@@ -73,11 +73,6 @@ import io.openslice.sol005nbi.ΑNSActionRequestPayload;
 import io.openslice.sol005nbi.ANSScaleRequestPayload;
 import io.openslice.centrallog.client.*;
 
-import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
-import OSM7Util.OSM7ArchiveExtractor.OSM7VNFDExtractor;
-import OSM7Util.OSM7NSReq.OSM7NSRequirements;
-import OSM7Util.OSM7VNFReq.OSM7VNFRequirements;
-
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8VNFDExtractor;
 import OSM8Util.OSM8NSReq.OSM8NSRequirements;
@@ -863,7 +858,7 @@ public class MANOController {
 						mp.getUsername(), mp.getPassword(), mp.getProject());
 			} catch (Exception e) {
 				logger.error(manoVersion + " fails authentication");
-				CentralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
+				centralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
 				continue;
 			}
 			synchronizeVIMs(osmClient, mp);
@@ -882,7 +877,7 @@ public class MANOController {
 		for(int j = 0; j < deployments.size(); j++)
 		{
 			logger.info(" Found Deployment with id:"+deployments.get(j).getId()+", "+deployments.get(j).getInstanceId());
-			CentralLogger.log( CLevel.INFO, " Found Deployment with id::"+deployments.get(j).getId()+", "+deployments.get(j).getInstanceId(), compname);
+			centralLogger.log( CLevel.INFO, " Found Deployment with id::"+deployments.get(j).getId()+", "+deployments.get(j).getInstanceId(), compname);
 		}				
 		//******************************************************************
 		// Get VIMs from OSM MANO.
@@ -896,7 +891,7 @@ public class MANOController {
 		for(int j = 0; j < infrastructures.size(); j++)
 		{
 			logger.info(" Found VIM with id:"+infrastructures.get(j).toJSON());
-			CentralLogger.log( CLevel.INFO, " Found VIM with id:"+infrastructures.get(j).toJSON(), compname);
+			centralLogger.log( CLevel.INFO, " Found VIM with id:"+infrastructures.get(j).toJSON(), compname);
 		}				
 		//******************************************************************
 		// Get VIMs from OSM MANO.
@@ -2000,13 +1995,7 @@ public class MANOController {
 		}
 	}
 
-	public String mapOSM7VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
-		VxFMetadata vxfMetadata = this.mapOSM7VNFD2Product(yamlFile);
-		ObjectMapper mapper = new ObjectMapper();
-		String res = mapper.writeValueAsString(vxfMetadata);
-
-		return res;
-	}
+	
 
 	public String mapOSM8VNFD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
 		VxFMetadata vxfMetadata = this.mapOSM8VNFD2Product(yamlFile);
@@ -2024,13 +2013,6 @@ public class MANOController {
 		return res;
 	}
 
-	public String mapOSM7NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
-		ExperimentMetadata vxfMetadata = this.mapOSM7NSD2Product(yamlFile);
-		ObjectMapper mapper = new ObjectMapper();
-		String res = mapper.writeValueAsString(vxfMetadata);
-
-		return res;
-	}
 
 	public String mapOSM8NSD2ProductEagerDataJson(String yamlFile) throws JsonProcessingException {
 		ExperimentMetadata vxfMetadata = this.mapOSM8NSD2Product(yamlFile);
@@ -2048,44 +2030,7 @@ public class MANOController {
 		return res;
 	}
 
-	public ExperimentMetadata mapOSM7NSD2Product(String yamlFile) {
-		ExperimentMetadata prod = new ExperimentMetadata();
-
-		// Get the nsd object out of the file info
-		Nsd ns;
-		try {
-			// We need to provide different implementations for each OSM version as this
-			// maps to a different version of NSD model.
-			ns = OSM7NSExtractor.extractNsdDescriptorFromYAMLFile(yamlFile);
-
-			prod.setName(ns.getName());
-			prod.setVersion(ns.getVersion());
-			prod.setVendor(ns.getVendor());
-			prod.setShortDescription(ns.getName());
-			prod.setLongDescription(ns.getDescription());
-
-			for (ConstituentVnfd v : ns.getConstituentVnfd()) {
-				ConstituentVxF cvxf = new ConstituentVxF();
-				cvxf.setMembervnfIndex(Integer.parseInt(v.getMemberVnfIndex()));
-				cvxf.setVnfdidRef((String) v.getVnfdIdRef());
-				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByName((String) v.getVnfdIdRef());
-				cvxf.setVxfref(vxf);
-				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);
-			}
-
-			// Get NS Requirements from the nsd
-			OSM7NSRequirements vr = new OSM7NSRequirements(ns);
-			// Store the requirements in HTML
-			prod.setDescriptorHTML(vr.toHTML());
-			// Store the YAML file
-			prod.setDescriptor(yamlFile);
-			prod.setIconsrc(ns.getLogo());
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return prod;
-	}
+	
 
 	public ExperimentMetadata mapOSM8NSD2Product(String yamlFile) {
 		ExperimentMetadata prod = new ExperimentMetadata();
@@ -2168,51 +2113,6 @@ public class MANOController {
 		return prod;
 	}
 	
-	public VxFMetadata mapOSM7VNFD2Product(String yamlFile) {
-		VxFMetadata prod = new VxFMetadata();
-		// Get the vnfd object out of the file info
-		Vnfd vnfd;
-		try {
-			// We need to provide different implementations for each OSM version as this
-			// maps to a different version of VNFD model.
-			vnfd = OSM7VNFDExtractor.extractVnfdDescriptorFromYAMLFile(yamlFile);
-			if (vnfd == null) {
-				logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
-				return null;
-			}
-			// Get the name for the db
-			prod.setName(vnfd.getName());
-			prod.setVersion(vnfd.getVersion());
-			prod.setVendor(vnfd.getVendor());
-			prod.setShortDescription(vnfd.getName());
-			prod.setLongDescription(vnfd.getDescription());
-
-			((VxFMetadata) prod).setValidationStatus(ValidationStatus.UNDER_REVIEW);
-			((VxFMetadata) prod).getVfimagesVDU().clear();// clear previous referenced images
-			for (Vdu vdu : vnfd.getVdu()) {
-				String imageName = vdu.getImage();
-				if ((imageName != null) && (!imageName.equals(""))) {
-					VFImage sm = new VFImage();
-					sm.setName(imageName);
-					((VxFMetadata) prod).getVfimagesVDU().add(sm);
-				}
-			}
-
-			// Get VNF Requirements from the vnfd
-			OSM7VNFRequirements vr = new OSM7VNFRequirements(vnfd);
-			// Store the requirements in HTML
-			prod.setDescriptorHTML(vr.toHTML());
-			// Store the YAML file
-			prod.setDescriptor(yamlFile);
-
-			prod.setIconsrc(vnfd.getLogo());
-		} catch (IOException e) {
-			logger.error("Cannot read Descriptor from YAML file:" + yamlFile);
-			e.printStackTrace();
-			return null;
-		}
-		return prod;
-	}
 
 	public VxFMetadata mapOSM8VNFD2Product(String yamlFile) {
 		VxFMetadata prod = new VxFMetadata();

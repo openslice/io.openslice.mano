@@ -23,10 +23,8 @@ import java.io.File;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.HttpStatusCodeException;
 
-import OSM7NBIClient.OSM7Client;
 import OSM8NBIClient.OSM8Client;
 import OSM9NBIClient.OSM9Client;
-import OSM7Util.OSM7ArchiveExtractor.OSM7NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import OSM9Util.OSM9ArchiveExtractor.OSM9NSExtractor;
 import io.openslice.sol005nbi.OSMClient;
@@ -43,8 +41,6 @@ public class OSMClientFactory {
 		
 		switch(type)
 		{
-			case "OSMvSEVEN":
-				return new OSM7Client(apiEndpoint,username,password,project_id);
 			case "OSMvEIGHT":
 				return new OSM8Client(apiEndpoint,username,password,project_id);
 			case "OSMvNINE":
@@ -59,8 +55,6 @@ public class OSMClientFactory {
 	{
 		switch(type)
 		{
-		case "OSMvSEVEN":
-			return new OSM7NSExtractor(NSDescriptorFile);
 		case "OSMvEIGHT":
 			return new OSM8NSExtractor(NSDescriptorFile);
 		case "OSMvNINE":
@@ -73,8 +67,6 @@ public class OSMClientFactory {
 	{
 		switch(type)
 		{
-			case "OSMvSEVEN":
-				return true;	
 			case "OSMvEIGHT":
 				return true;				
 			case "OSMvNINE":
