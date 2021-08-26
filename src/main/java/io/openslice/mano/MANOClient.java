@@ -372,9 +372,9 @@ public class MANOClient {
 	// Get the data from the portal api (database)
 	public DeploymentDescriptor getDeploymentByIdEager(long Id) {
 		String ret = template.requestBody("activemq:queue:getDeploymentByIdEager", Id, String.class);
+		logger.info("Message Received from AMQ on activemq:queue:getDeploymentByIdEager("+Id+") call:" + ret);		
 		// FluentProducerTemplate template = contxt.create
 		// .createFluentProducerTemplate().to("activemq:queue:getRunningInstantiatingAndTerminatingDeployments?multipleConsumers=true");
-		logger.info("Message Received from AMQ:" + ret);
 		DeploymentDescriptor dd = null;
 		// Map object to DeploymentDescriptor
 		try {
@@ -384,7 +384,7 @@ public class MANOClient {
 			if (dd.getExperiment() != null) {
 				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
 				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));				
-				logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
+				logger.info("getDeploymentByIdEager: The experiment of the deployment is " + dd.getExperiment().getId());
 			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -416,7 +416,7 @@ public class MANOClient {
 			if (dd.getExperiment() != null) {
 				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
 				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));
-				logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
+				logger.info("getDeploymentByInstanceIdEager: The experiment of the deployment is " + dd.getExperiment().toString());
 			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
@@ -487,7 +487,7 @@ public class MANOClient {
 
 	public ExperimentMetadata getNSDById(long id) {
 		String ret = template.requestBody("activemq:queue:getNSDByID", id, String.class);
-		logger.info("Message Received from AMQ:" + ret);
+		logger.info("Message Received from AMQ on activemq:queue:getNSDByID call:" + ret);
 		ExperimentMetadata expm = null;
 		// Map object to ExperimentMetadata
 		try {
@@ -889,7 +889,7 @@ public class MANOClient {
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
 			//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
 			dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));
-			logger.info("The experiment of the deployment is " + dd.getExperiment().toString());
+			logger.info("updateDeploymentDescriptor: The experiment of the deployment is " + dd.getExperiment().getId());
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

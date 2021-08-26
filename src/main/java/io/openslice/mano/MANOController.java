@@ -1458,9 +1458,12 @@ public class MANOController {
 	}
 
 	private ExperimentOnBoardDescriptor getExperimOBD(DeploymentDescriptor deployment_tmp) {
+		logger.info( "getExperimOBD start");
+		logger.info(deployment_tmp.getExperimentFullDetails()
+				.getExperimentOnBoardDescriptors());
 		for (ExperimentOnBoardDescriptor e : deployment_tmp.getExperimentFullDetails()
 				.getExperimentOnBoardDescriptors()) {
-
+			logger.info( "getExperimOBD:"+ e.toString());
 			return e; // return the first one found
 		}
 		return null;
@@ -1684,7 +1687,9 @@ public class MANOController {
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
 		logger.info("Starting deployNSDToMANOProvicer");
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
+		logger.info("Starting getExperimOBD");
 		ExperimentOnBoardDescriptor tmp = getExperimOBD(deploymentdescriptor);
+		logger.info("Starting connection to osm");
 		OSMClient osmClient = null;
 		try {
 			logger.debug("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()

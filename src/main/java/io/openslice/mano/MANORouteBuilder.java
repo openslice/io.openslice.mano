@@ -142,7 +142,7 @@ public class MANORouteBuilder  extends RouteBuilder{
 //		**********************************************************************************************
 		
 		from("timer://checkAndUpdateRunningDeploymentDescriptors?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateRunningDeploymentDescriptors").stop();
-		from("timer://checkAndUpdateMANOProvidersResources?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateMANOProvidersResources").stop();
+		//from("timer://checkAndUpdateMANOProvidersResources?delay=1s&period=60000").bean(  aMANOController,"checkAndUpdateMANOProvidersResources").stop();
 		
 		// THESE SEND THE DeploymentDescriptor Object to Bugzilla for status updates		
 		// Here we needed to add getDeploymentEagerDataJson from portal.api.service.DeploymentDescriptorService 
@@ -241,9 +241,9 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvEIGHT"))
         	.bean(aMANOController, "mapOSM8VNFD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvNINE"))
-        	.bean(aMANOController, "mapOSM9VNFD2ProductEagerDataJson")
-        .when(header("OSMType").isEqualTo("GenericSOL005"))
-        	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
+        	.bean(aMANOController, "mapOSM9VNFD2ProductEagerDataJson");
+        //.when(header("OSMType").isEqualTo("GenericSOL005"))
+        //	.bean(aMANOController, "mapOSM7VNFD2ProductEagerDataJson");
 
 		from("activemq:topic:ns.metadata.retrieve")
 		.log("activemq:topic:ns.metadata.retrieve")
@@ -251,9 +251,9 @@ public class MANORouteBuilder  extends RouteBuilder{
         .when(header("OSMType").isEqualTo("OSMvEIGHT"))
     	.bean(aMANOController, "mapOSM8NSD2ProductEagerDataJson")
         .when(header("OSMType").isEqualTo("OSMvNINE"))
-    	.bean(aMANOController, "mapOSM9NSD2ProductEagerDataJson")
-        .when(header("OSMType").isEqualTo("GenericSOL005"))
-        	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
+    	.bean(aMANOController, "mapOSM9NSD2ProductEagerDataJson");
+        //.when(header("OSMType").isEqualTo("GenericSOL005"))
+        //	.bean(aMANOController, "mapOSM7NSD2ProductEagerDataJson");
 
 		from("jms:queue:ns.action.run")
 		.log("jms:queue:ns.action.run")
