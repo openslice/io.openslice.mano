@@ -460,6 +460,32 @@ public class MANOClient {
 		return vxfm;
 	}
 
+	public VxFMetadata getVxFByUUid(String UUid) 
+	{
+		String ret = template.requestBody("activemq:queue:getVxFByUUIDDataJson", UUid, String.class);
+		logger.info("Message Received from AMQ:" + ret);
+		VxFMetadata vxfm = null;
+		// Map object to VxFMetadata
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			vxfm = mapper.readValue(ret, VxFMetadata.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return vxfm;		
+	}
+	
 	public VxFMetadata getVxFByName(String name) {
 		String ret = template.requestBody("activemq:queue:getVxFByName", name, String.class);
 		logger.info("Message Received from AMQ:" + ret);
@@ -487,7 +513,7 @@ public class MANOClient {
 
 	public ExperimentMetadata getNSDById(long id) {
 		String ret = template.requestBody("activemq:queue:getNSDByID", id, String.class);
-		logger.info("Message Received from AMQ on activemq:queue:getNSDByID call:" + ret);
+		logger.info("Message Received from AMQ on activemq:queue:getNSDByID call for id="+id+" :" + ret);
 		ExperimentMetadata expm = null;
 		// Map object to ExperimentMetadata
 		try {
@@ -536,6 +562,16 @@ public class MANOClient {
 	//	return em;
 	//}
 
+	public String getVxFOnBoardedDescriptorByVxFAndMP(String id, long mp) 
+	{		
+		String message = id+"##"+mp;
+		logger.info("getVxFOnBoardedDescriptorByVxFAndMP:Message Sent to AMQ:" + message);
+		String ret = template.requestBody("activemq:queue:getVxFOnBoardedDescriptorByVxFAndMP", message, String.class);
+		logger.info("Message Received from AMQ:" + ret);
+		logger.info("From ActiveMQ:" + ret.toString());
+		return ret.toString();
+	}
+	
 	private VxFOnBoardedDescriptor getVxFOnBoardedDescriptorById(long id) {
 		String ret = template.requestBody("activemq:queue:getVxFOBDByID", id, String.class);
 		logger.info("Message Received from AMQ:" + ret);

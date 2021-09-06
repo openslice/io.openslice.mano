@@ -90,8 +90,8 @@ public class NSInstantiateInstanceRequestPayload {
 		// We temporarily select the first (and most probably the only one).
 		// Otherwise the user needs to define the OSM MANO where the Experiment is
 		// OnBoarded in order to instantiate.
-		this.nsdId = getExperimOBD(deploymentdescriptor).getDeployId();
-
+		this.nsdId = deploymentdescriptor.getObddescriptor_uuid().getDeployId();
+		
 		Integer count = 1;
 		for (DeploymentDescriptorVxFPlacement tmp : deploymentdescriptor.getVxfPlacements()) {
 			VnF vnf_tmp = new VnF();
