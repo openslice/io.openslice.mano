@@ -21,6 +21,7 @@
 package io.openslice.mano;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -871,20 +872,6 @@ public class MANOController {
 		
 	}
 
-	private void synchronizeDeployments(OSMClient osmClient, MANOprovider mp)
-	{
-		//******************************************************************
-		// Get available VIMs from the portal's Database
-		List<DeploymentDescriptor> deployments = aMANOClient.getAllDeployments();
-		for(int j = 0; j < deployments.size(); j++)
-		{
-			logger.info(" Found Deployment with id:"+deployments.get(j).getId()+", "+deployments.get(j).getInstanceId());
-			centralLogger.log( CLevel.INFO, " Found Deployment with id::"+deployments.get(j).getId()+", "+deployments.get(j).getInstanceId(), compname);
-		}				
-		//******************************************************************
-		// Get VIMs from OSM MANO.
-	}
-	
 	private void synchronizeVIMs(OSMClient osmClient, MANOprovider mp)
 	{
 		//******************************************************************
@@ -948,7 +935,8 @@ public class MANOController {
 	{
 		//******************************************************************
 		// Get ExperimentMetadata available from the portal's Database
-		List<VxFMetadata> vxfMetadatas = aMANOClient.getVnfds();
+		//List<VxFMetadata> vxfMetadatas = aMANOClient.getVnfds();
+		List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors = aMANOClient.getVxFOnBoardedDescriptors();
 		
 		//******************************************************************
 		// Get VNFDs from OSM MANO.
@@ -961,20 +949,20 @@ public class MANOController {
 			logger.info("Got VNFD list "+vnfds_list_entity.getBody());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
-				synchronizeVNFDsOSM8(vxfMetadatas, vnfds_list_entity, mp);
+				synchronizeVNFDsOSM8(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
 			}
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvNINE"))
 			{					
-				synchronizeVNFDsOSM9(vxfMetadatas, vnfds_list_entity, mp);
+				synchronizeVNFDsOSM9(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
 			}
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvTEN"))
 			{					
-				synchronizeVNFDsOSM10(vxfMetadatas, vnfds_list_entity, mp);
+				synchronizeVNFDsOSM10(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
 			}
 		}		
 	}
 	
-	private void synchronizeVNFDsOSM8(List<VxFMetadata> vxfMetadatas, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
+	private void synchronizeVNFDsOSM8(List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1011,9 +999,9 @@ public class MANOController {
 				// Check if the VxFMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(VxFMetadata dbvxf : vxfMetadatas)
+				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 				{
-					if(dbvxf.getUuid().equals(vnfd.getId()))
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
 					{
 						logger.info("VNFD " + vnfd.getId() + " already exists");
 						exists_in_db = true;
@@ -1069,7 +1057,7 @@ public class MANOController {
 		}			
 	}
 
-	private void synchronizeVNFDsOSM9(List<VxFMetadata> vxfMetadatas, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
+	private void synchronizeVNFDsOSM9(List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1106,9 +1094,9 @@ public class MANOController {
 				// Check if the VxFMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(VxFMetadata dbvxf : vxfMetadatas)
+				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 				{
-					if(dbvxf.getUuid().equals(vnfd.getId()))
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
 					{
 						logger.info("VNFD " + vnfd.getId() + " already exists");
 						exists_in_db = true;
@@ -1164,7 +1152,7 @@ public class MANOController {
 		}			
 	}
 
-	private void synchronizeVNFDsOSM10(List<VxFMetadata> vxfMetadatas, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
+	private void synchronizeVNFDsOSM10(List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1201,9 +1189,9 @@ public class MANOController {
 				// Check if the VxFMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(VxFMetadata dbvxf : vxfMetadatas)
+				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 				{
-					if(dbvxf.getUuid().equals(vnfd.getId()))
+					if(dbvxfobd.getUuid().equals(vnfd.getId()))
 					{
 						logger.info("VNFD " + vnfd.getId() + " already exists");
 						exists_in_db = true;
@@ -1263,7 +1251,8 @@ public class MANOController {
 	{
 		//******************************************************************
 		// Get ExperimentMetadata available from the portal's Database
-		List<ExperimentMetadata> experimentMetadatas = aMANOClient.getExperiments();
+		//List<ExperimentMetadata> experimentMetadatas = aMANOClient.getExperiments();
+		List<ExperimentOnBoardDescriptor> experimentOnboardDescriptors = aMANOClient.getExperimentOnBoardDescriptors();
 		//******************************************************************
 		// Get NSDs from OSM MANO.
 		ResponseEntity<String> nsds_list_entity = osmClient.getNSDescriptorsList();
@@ -1276,20 +1265,20 @@ public class MANOController {
 			logger.info("Got MP Version:"+mp.getSupportedMANOplatform().getVersion());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
-				synchronizeNSDsOSM8(experimentMetadatas, nsds_list_entity, mp);
+				synchronizeNSDsOSM8(experimentOnboardDescriptors, nsds_list_entity, mp);
 			}
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvNINE"))
 			{					
-				synchronizeNSDsOSM9(experimentMetadatas, nsds_list_entity, mp);
+				synchronizeNSDsOSM9(experimentOnboardDescriptors, nsds_list_entity, mp);
 			}
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvTEN"))
 			{					
-				synchronizeNSDsOSM10(experimentMetadatas, nsds_list_entity, mp);
+				synchronizeNSDsOSM10(experimentOnboardDescriptors, nsds_list_entity, mp);
 			}
 		}		
 	}
 
-	private void synchronizeNSDsOSM8(List<ExperimentMetadata> experimentMetadatas, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
+	private void synchronizeNSDsOSM8(List<ExperimentOnBoardDescriptor> experimentOnBoardDescriptor, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1326,9 +1315,9 @@ public class MANOController {
 				// Check if the ExperimentMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(ExperimentMetadata dbexp : experimentMetadatas)
+				for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptor)
 				{
-					if(dbexp.getUuid().equals(nsd.getId()))
+					if(dbexpobd.getDeployId().equals(nsd.getId()))
 					{
 						logger.info("NSD " + nsd.getId() + " already exists");
 						exists_in_db = true;
@@ -1395,7 +1384,7 @@ public class MANOController {
 		}			
 	}
 
-	private void synchronizeNSDsOSM9(List<ExperimentMetadata> experimentMetadatas, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
+	private void synchronizeNSDsOSM9(List<ExperimentOnBoardDescriptor> experimentOnBoardDescriptors, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1432,9 +1421,9 @@ public class MANOController {
 				// Check if the ExperimentMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(ExperimentMetadata dbexp : experimentMetadatas)
+				for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
 				{
-					if(dbexp.getUuid().equals(nsd.getInvariantId()))
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + nsd.getInvariantId() + " already exists");
 						exists_in_db = true;
@@ -1503,7 +1492,7 @@ public class MANOController {
 		}			
 	}
 	
-	private void synchronizeNSDsOSM10(List<ExperimentMetadata> experimentMetadatas, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
+	private void synchronizeNSDsOSM10(List<ExperimentOnBoardDescriptor> experimentOnBoardDescriptors, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
 	{
 		ObjectMapper mapper = new ObjectMapper();
 		try {
@@ -1540,9 +1529,9 @@ public class MANOController {
 				// Check if the ExperimentMetadata uuid already exists in the database
 				
 				boolean exists_in_db = false;
-				for(ExperimentMetadata dbexp : experimentMetadatas)
+				for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
 				{
-					if(dbexp.getUuid().equals(nsd.getInvariantId()))
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + nsd.getInvariantId() + " already exists");
 						exists_in_db = true;

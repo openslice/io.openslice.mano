@@ -204,6 +204,64 @@ public class MANOClient {
 		return vxfs;
 	}
 
+	public List<VxFOnBoardedDescriptor> getVxFOnBoardedDescriptors() {
+		String ret = template.requestBody("activemq:queue:getVxFOnBoardedDescriptorListDataJson", "", String.class);
+		List<VxFOnBoardedDescriptor> vxfobds = null;
+		// Map object to Infrastructure
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			vxfobds = mapper.readValue(ret, new TypeReference<List<VxFOnBoardedDescriptor>>() {
+			});
+			for (int i = 0; i < vxfobds.size(); i++) {
+				logger.info("VxFObdDescriptor " + vxfobds.get(i).getId() + " with Deploy id:"
+						+ vxfobds.get(i).getDeployId() +','+ vxfobds.get(i).getDeployId() + " is loaded");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return vxfobds;
+	}
+
+	public List<ExperimentOnBoardDescriptor> getExperimentOnBoardDescriptors() {
+		String ret = template.requestBody("activemq:queue:getExperimentOnBoardDescriptorsDataJson", "", String.class);
+		List<ExperimentOnBoardDescriptor> expobds = null;
+		// Map object to Infrastructure
+		try {
+			ObjectMapper mapper = new ObjectMapper();
+			logger.info("From ActiveMQ:" + ret.toString());
+			expobds = mapper.readValue(ret, new TypeReference<List<ExperimentOnBoardDescriptor>>() {
+			});
+			for (int i = 0; i < expobds.size(); i++) {
+				logger.info("ExperimentObdDescriptor " + expobds.get(i).getId() + " with Deploy id:"
+						+ expobds.get(i).getDeployId() +','+ expobds.get(i).getDeployId() + " is loaded");
+			}
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			logger.error(e.getMessage());
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+			logger.error(e1.getMessage());
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+			logger.error(e11.getMessage());
+		}
+		return expobds;
+	}
+
 	public List<ExperimentMetadata> getExperiments() {
 		String ret = template.requestBody("activemq:queue:getExperiments", "", String.class);
 		List<ExperimentMetadata> experiments = null;
