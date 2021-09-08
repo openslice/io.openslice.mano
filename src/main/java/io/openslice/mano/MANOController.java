@@ -1754,7 +1754,8 @@ public class MANOController {
 		
 	}	
 	
-	public void checkAndUpdateRunningDeploymentDescriptors() {		
+	public void checkAndUpdateRunningDeploymentDescriptors() {	
+		checkAndUpdateMANOProvidersResources();
 		logger.info("Update Deployment Descriptors");
 		// centralLogger.log( CLevel.INFO, "Update Deployment Descriptors!!!!",
 		// compname);
