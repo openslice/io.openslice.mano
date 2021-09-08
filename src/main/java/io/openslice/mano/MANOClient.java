@@ -441,9 +441,11 @@ public class MANOClient {
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
 			if (dd.getExperiment() != null) {
 				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
-				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));				
+				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));	
+				
 				logger.info("getDeploymentByIdEager: The experiment of the deployment is " + dd.getExperiment().getId());
 			}
+			dd.getObddescriptor_uuid();
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
