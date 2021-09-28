@@ -880,7 +880,7 @@ public class MANOController {
 		for(int j = 0; j < infrastructures.size(); j++)
 		{
 			logger.info(" Found VIM with id:"+infrastructures.get(j).toJSON());
-			centralLogger.log( CLevel.INFO, " Found VIM with id:"+infrastructures.get(j).toJSON(), compname);
+			//centralLogger.log( CLevel.INFO, "Synchronize VIM with id:"+infrastructures.get(j).getVIMid() , compname);
 		}				
 		//******************************************************************
 		// Get VIMs from OSM MANO.
