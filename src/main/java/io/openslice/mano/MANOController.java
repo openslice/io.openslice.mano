@@ -1731,18 +1731,25 @@ public class MANOController {
 		//prod.setVendor(ns.getDesigner());
 		prod.setShortDescription(nsd.getName());
 		prod.setLongDescription(nsd.getName());
-		for (Df v : nsd.getDf().values()) {
-			for( VnfProfile q : v.getVnfProfile().values())
-			{
-				ConstituentVxF cvxf = new ConstituentVxF();
-				cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
-				cvxf.setVnfdidRef((String) q.getVnfdId());
-				String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
-				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
-				cvxf.setVxfref(vxf);
-				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);					
+		
+
+			for (Df v : nsd.getDf().values()) {
+				for( VnfProfile q : v.getVnfProfile().values())
+				{
+					ConstituentVxF cvxf = new ConstituentVxF();
+					try {
+						cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+						
+					} catch ( NumberFormatException e) {
+						cvxf.setMembervnfIndex( 0 );
+					}
+					cvxf.setVnfdidRef((String) q.getVnfdId());
+					String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
+					VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
+					cvxf.setVxfref(vxf);
+					((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);					
+				}
 			}
-		}
 		// Get NS Requirements from the nsd
 		OSM10NSRequirements vr = new OSM10NSRequirements(nsd);
 		// Store the requirements in HTML
