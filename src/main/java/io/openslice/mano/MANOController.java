@@ -1565,7 +1565,12 @@ public class MANOController {
 						for( VnfProfile q : v.getVnfProfile().values())
 						{
 							ConstituentVxF cvxf = new ConstituentVxF();
-							cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+							try {
+								cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+								
+							} catch ( NumberFormatException e) {
+								cvxf.setMembervnfIndex( 0 );
+							}
 							cvxf.setVnfdidRef((String) q.getVnfdId());
 							String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
 							VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
