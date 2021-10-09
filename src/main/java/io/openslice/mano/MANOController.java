@@ -1593,7 +1593,7 @@ public class MANOController {
 
 				}						
 			}					
-		} catch (IllegalStateException | IOException e) {
+		} catch (Exception e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
 		}			
@@ -1722,36 +1722,43 @@ public class MANOController {
 
 	public ExperimentMetadata mapOSM10NSD2ProductFromJSON(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd, MANOprovider mp) {
 		
-		ExperimentMetadata prod = new ExperimentMetadata();
-		// We need to provide different implementations for each OSM version as this
-		// maps to a different version of NSD model.
-		prod.setUuid(nsd.getInvariantId());
-		prod.setName(nsd.getName());
-		prod.setVersion(nsd.getVersion());
-		//prod.setVendor(ns.getDesigner());
-		prod.setShortDescription(nsd.getName());
-		prod.setLongDescription(nsd.getName());
-		for (Df v : nsd.getDf().values()) {
-			for( VnfProfile q : v.getVnfProfile().values())
-			{
-				ConstituentVxF cvxf = new ConstituentVxF();
-				cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
-				cvxf.setVnfdidRef((String) q.getVnfdId());
-				String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
-				VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
-				cvxf.setVxfref(vxf);
-				((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);					
+		try
+		{
+			ExperimentMetadata prod = new ExperimentMetadata();
+			// We need to provide different implementations for each OSM version as this
+			// maps to a different version of NSD model.
+			prod.setUuid(nsd.getInvariantId());
+			prod.setName(nsd.getName());
+			prod.setVersion(nsd.getVersion());
+			//prod.setVendor(ns.getDesigner());
+			prod.setShortDescription(nsd.getName());
+			prod.setLongDescription(nsd.getName());
+			for (Df v : nsd.getDf().values()) {
+				for( VnfProfile q : v.getVnfProfile().values())
+				{
+					ConstituentVxF cvxf = new ConstituentVxF();
+					cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+					cvxf.setVnfdidRef((String) q.getVnfdId());
+					String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
+					VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
+					cvxf.setVxfref(vxf);
+					((ExperimentMetadata) prod).getConstituentVxF().add(cvxf);					
+				}
 			}
+			// Get NS Requirements from the nsd
+			OSM10NSRequirements vr = new OSM10NSRequirements(nsd);
+			// Store the requirements in HTML
+			prod.setDescriptorHTML(vr.toHTML());
+			// Store the YAML file
+			prod.setDescriptor("Automatically loaded NSD");
+			prod.setIconsrc("");
+			return prod;		
 		}
-		// Get NS Requirements from the nsd
-		OSM10NSRequirements vr = new OSM10NSRequirements(nsd);
-		// Store the requirements in HTML
-		prod.setDescriptorHTML(vr.toHTML());
-		// Store the YAML file
-		prod.setDescriptor("Automatically loaded NSD");
-		prod.setIconsrc("");
-		return prod;
-		
+		catch(Exception e)
+		{
+			centralLogger.log(CLevel.ERROR, "Failed to map NSD 2 Product for "+nsd.getName()+". Retuning null.", compname);
+			return null;
+		}
 	}	
 	
 	public void checkAndUpdateRunningDeploymentDescriptors() {	
@@ -2822,15 +2829,17 @@ public class MANOController {
 
 			((VxFMetadata) prod).setValidationStatus(ValidationStatus.UNDER_REVIEW);
 			((VxFMetadata) prod).getVfimagesVDU().clear();// clear previous referenced images
-			for (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.vnfd.Vdu vdu : vnfd.getVdu().values()) {
-				String imageName = vdu.getSwImageDesc();
-				if ((imageName != null) && (!imageName.equals(""))) {
-					VFImage sm = new VFImage();
-					sm.setName(imageName);
-					((VxFMetadata) prod).getVfimagesVDU().add(sm);
+			if(vnfd.getVdu() != null)
+			{
+				for (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.vnfd.Vdu vdu : vnfd.getVdu().values()) {
+					String imageName = vdu.getSwImageDesc();
+					if ((imageName != null) && (!imageName.equals(""))) {
+						VFImage sm = new VFImage();
+						sm.setName(imageName);
+						((VxFMetadata) prod).getVfimagesVDU().add(sm);
+					}
 				}
 			}
-
 			// Get VNF Requirements from the vnfd
 			OSM10VNFRequirements vr = new OSM10VNFRequirements(vnfd);
 			// Store the requirements in HTML
