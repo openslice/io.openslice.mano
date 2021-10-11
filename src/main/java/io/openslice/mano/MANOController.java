@@ -1191,7 +1191,7 @@ public class MANOController {
 				boolean exists_in_db = false;
 				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 				{
-					if(dbvxfobd.getUuid().equals(vnfd.getId()))
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
 					{
 						logger.info("VNFD " + vnfd.getId() + " already exists");
 						exists_in_db = true;
