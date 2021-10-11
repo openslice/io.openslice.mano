@@ -21,7 +21,6 @@
 package io.openslice.mano;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +40,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpStatusCodeException;
 
@@ -50,8 +48,6 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
@@ -63,7 +59,6 @@ import io.openslice.model.Infrastructure;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
 import io.openslice.model.PackagingFormat;
-import io.openslice.model.PortalUser;
 import io.openslice.model.ScaleDescriptor;
 import io.openslice.model.VFImage;
 import io.openslice.model.ValidationStatus;
@@ -1565,7 +1560,12 @@ public class MANOController {
 						for( VnfProfile q : v.getVnfProfile().values())
 						{
 							ConstituentVxF cvxf = new ConstituentVxF();
-							cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+							try {
+								cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+								
+							} catch ( NumberFormatException e) {
+								cvxf.setMembervnfIndex( 0 );
+							}
 							cvxf.setVnfdidRef((String) q.getVnfdId());
 							String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
 							VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
@@ -1720,8 +1720,8 @@ public class MANOController {
 		
 	}	
 
-	public ExperimentMetadata mapOSM10NSD2ProductFromJSON(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd, MANOprovider mp) {
-		
+	public ExperimentMetadata mapOSM10NSD2ProductFromJSON(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd, MANOprovider mp) 
+	{		
 		try
 		{
 			ExperimentMetadata prod = new ExperimentMetadata();
