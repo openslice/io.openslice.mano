@@ -842,7 +842,8 @@ public class MANOController {
 	public void checkAndUpdateMANOProvidersResources() {
 
 		// Get MANO Providers
-		List<MANOprovider> mps = aMANOClient.getMANOproviders();
+		//List<MANOprovider> mps = aMANOClient.getMANOproviders();
+		List<MANOprovider> mps = aMANOClient.getMANOprovidersForSync();
 		// For each MANO Provider
 		for (int i = 0; i < mps.size(); i++) 
 		{
