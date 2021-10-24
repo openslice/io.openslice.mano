@@ -21,8 +21,11 @@
 package io.openslice.mano;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -48,11 +51,15 @@ import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
+
 import io.openslice.model.CompositeExperimentOnBoardDescriptor;
 import io.openslice.model.CompositeVxFOnBoardDescriptor;
 import io.openslice.model.ConstituentVxF;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.DeploymentDescriptorStatus;
+import io.openslice.model.DeploymentDescriptorVxFInstanceInfo;
+import io.openslice.model.DeploymentDescriptorVxFPlacement;
 import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.Infrastructure;
@@ -68,7 +75,7 @@ import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.ΑNSActionRequestPayload;
 import io.openslice.sol005nbi.ANSScaleRequestPayload;
 import io.openslice.centrallog.client.*;
-
+import io.openslice.mano.NSInstantiateInstanceRequestPayload.VnF;
 import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
 import OSM8Util.OSM8ArchiveExtractor.OSM8VNFDExtractor;
 import OSM8Util.OSM8NSReq.OSM8NSRequirements;
@@ -1878,13 +1885,46 @@ public class MANOController {
 									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 									aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
 								}
+								
+								//Get the VNF instance ids
+								logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
+								List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
+								int q=0;
+								deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
+								for(String constituent_vnfr_ref : constituent_vnfr_refs) 
+								{
+									logger.info("VNF with id "+constituent_vnfr_ref+" found in NS instance info.");									
+									//get the info of the vnf instances
+									JSONObject vnf_instance_info = osmClient.getVNFInstanceInfo(constituent_vnfr_ref);
+									if (vnf_instance_info == null) {
+										deployment_tmp.setFeedback("VNF instance not present in NS Instance Info.");
+									} else {
+										try {											
+											logger.info("Updating vxfPlacementInfo");			
+											logger.info("Before setting vnf instance info");
+											logger.info("VNF Instance information " +vnf_instance_info.toString());
+											logger.info("Initial value for place "+q);
+											logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
+											DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
+											tmp.setVxfInstanceInfo(vnf_instance_info.toString());
+											deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().add(tmp);
+										}
+										catch (Exception e) {
+											logger.error("Failed to load vxfplacements info with error " + e.getMessage());
+										}
+									}
+									q++;
+								}
+									
 							}
 							logger.info("Setting Operational Status");
 							deployment_tmp.setOperationalStatus(ns_instance_info.getString("operational-status"));
 							deployment_tmp.setConfigStatus(ns_instance_info.getString("config-status"));
 							deployment_tmp.setDetailedStatus(ns_instance_info.getString("detailed-status")
 									.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-
+							logger.info("deployment_tmp before update "+deployment_tmp.toJSON());
+							deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+							logger.info("deployment_tmp after update "+deployment_tmp.toJSON());
 
 							
 							// Depending on the current OSM status, change the portal status.
