@@ -55,7 +55,7 @@ spring:
         healthCheckInterval: 120s
       
   activemq:
-    brokerUrl: tcp://localhost:61616
+    brokerUrl: tcp://localhost:6616
     user: admin
     password: admin
     pool:
