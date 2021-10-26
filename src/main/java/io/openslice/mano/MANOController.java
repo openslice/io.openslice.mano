@@ -1839,10 +1839,10 @@ public class MANOController {
 								logger.info("After Calling alert on scale");
 								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 
-//								ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
-//								JSONObject obj = new JSONObject(response.getBody());
-//								String action_id = obj.getString("id");
-//								logger.info("Got action id:"+action_id);
+								//ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
+								//JSONObject obj = new JSONObject(response.getBody());
+								//String action_id = obj.getString("id");
+								//logger.info("Got action id:"+action_id);
 
 								// *******************************************************************************************************************
 								// Create the payload for
@@ -1880,8 +1880,15 @@ public class MANOController {
 											+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
 									deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-									deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
-								
+									if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()<=PackagingFormat.OSMvEIGHT.ordinal())
+									{
+										deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
+									}
+									else if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()>PackagingFormat.OSMvEIGHT.ordinal())
+									{
+										deployment_tmp.setConstituentVnfrIps("ToDo");										
+									}
+										
 									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 									aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
 								}
@@ -1889,7 +1896,7 @@ public class MANOController {
 								//Get the VNF instance ids
 								logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
 								List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
-								int q=0;
+								Integer q=0;
 								deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
 								for(String constituent_vnfr_ref : constituent_vnfr_refs) 
 								{
@@ -1906,6 +1913,8 @@ public class MANOController {
 											logger.info("Initial value for place "+q);
 											logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
 											DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
+											String member_vnf_index_ref = JsonPath.read(vnf_instance_info.toString(), "$.member-vnf-index-ref");
+											tmp.setMemberVnfIndexRef(member_vnf_index_ref);
 											tmp.setVxfInstanceInfo(vnf_instance_info.toString());
 											deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().add(tmp);
 										}
