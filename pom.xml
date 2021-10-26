@@ -223,6 +223,14 @@
 		    <artifactId>jsr305</artifactId>
 		    <version>3.0.2</version>
 		</dependency>	
+		
+		<dependency>
+		    <groupId>com.jayway.jsonpath</groupId>
+		    <artifactId>json-path</artifactId>
+		    <version>2.6.0</version>
+		</dependency>
+		
+		
 		<!-- https://mvnrepository.com/artifact/org.opendaylight.mdsal/yang-binding -->
 		<dependency>
 		    <groupId>org.glassfish.jaxb</groupId>
