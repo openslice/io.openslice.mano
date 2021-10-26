@@ -1825,106 +1825,14 @@ public class MANOController {
 							deployment_tmp.setNsr(ns_instance_info.toString());
 							deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 							logger.info("Setting NSR Info:" + deployment_tmp.getNsr());
+							
+							
+							
 							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) {
-								// JSONObject ns_nslcm_details =
-								// osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+
+								updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
 								
-								String previous_nslcm_details = deployment_tmp.getNs_nslcm_details(); //contains last performed action of array
-								String current_nslcm_details = osmClient
-										.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
-								logger.info("Calling alert on scale");
-								current_nslcm_details = aMANOClient.alertOnScaleOpsList(deployment_tmp, previous_nslcm_details, current_nslcm_details);
-
-								deployment_tmp.setNs_nslcm_details(current_nslcm_details);
-								logger.info("After Calling alert on scale");
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-
-								//ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
-								//JSONObject obj = new JSONObject(response.getBody());
-								//String action_id = obj.getString("id");
-								//logger.info("Got action id:"+action_id);
-
-								// *******************************************************************************************************************
-								// Create the payload for
-								//logger.info("Starting scaling");
-								//ANSScaleRequestPayload nsscalerequestpayload = new ANSScaleRequestPayload();
-								//nsscalerequestpayload.setScaleType("SCALE_VNF");
-								//nsscalerequestpayload.setNsInstanceId(deployment_tmp.getInstanceId());
-								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setMember_vnf_index("1");
-								//nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
-								//		.setScaling_group_descriptor("apache_vdu_autoscale");
-								//if (Math.random() > 0.5) {
-								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_IN");
-								//} else {
-								//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_OUT");
-								//}
-								//ResponseEntity<String> response = this
-								//		.performNSInstanceScale(nsscalerequestpayload.toJSON());
-								//logger.info(nsscalerequestpayload.toJSON());
-								//JSONObject obj = new JSONObject(response.getBody());
-								//String action_id = obj.getString("id");
-								//logger.info("Got action id:" + action_id);
-								// *******************************************************************************************************************
-
-								if (!deployment_tmp.getOperationalStatus()
-										.equals(ns_instance_info.getString("operational-status"))
-										|| !deployment_tmp.getConfigStatus()
-												.equals(ns_instance_info.getString("config-status"))
-										|| !deployment_tmp.getDetailedStatus()
-												.equals(ns_instance_info.getString("detailed-status")
-														.replaceAll("\\n", " ").replaceAll("\'", "'")
-														.replaceAll("\\\\", ""))) {
-									logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
-											+ deployment_tmp.getStatus());
-									centralLogger.log(CLevel.INFO, "Status change of deployment "
-											+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
-									deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
-											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-									if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()<=PackagingFormat.OSMvEIGHT.ordinal())
-									{
-										deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
-									}
-									else if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()>PackagingFormat.OSMvEIGHT.ordinal())
-									{
-										deployment_tmp.setConstituentVnfrIps("ToDo");										
-									}
 										
-									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-									aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
-								}
-								
-								//Get the VNF instance ids
-								logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
-								List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
-								Integer q=0;
-								deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
-								for(String constituent_vnfr_ref : constituent_vnfr_refs) 
-								{
-									logger.info("VNF with id "+constituent_vnfr_ref+" found in NS instance info.");									
-									//get the info of the vnf instances
-									JSONObject vnf_instance_info = osmClient.getVNFInstanceInfo(constituent_vnfr_ref);
-									if (vnf_instance_info == null) {
-										deployment_tmp.setFeedback("VNF instance not present in NS Instance Info.");
-									} else {
-										try {											
-											logger.info("Updating vxfPlacementInfo");			
-											logger.info("Before setting vnf instance info");
-											logger.info("VNF Instance information " +vnf_instance_info.toString());
-											logger.info("Initial value for place "+q);
-											logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
-											DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
-											String member_vnf_index_ref = JsonPath.read(vnf_instance_info.toString(), "$.member-vnf-index-ref");
-											tmp.setMemberVnfIndexRef(member_vnf_index_ref);
-											tmp.setVxfInstanceInfo(vnf_instance_info.toString());
-											deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().add(tmp);
-										}
-										catch (Exception e) {
-											logger.error("Failed to load vxfplacements info with error " + e.getMessage());
-										}
-									}
-									q++;
-								}
-									
 							}
 							logger.info("Setting Operational Status");
 							deployment_tmp.setOperationalStatus(ns_instance_info.getString("operational-status"));
@@ -1952,8 +1860,11 @@ public class MANOController {
 										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
 
 								deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-								aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
+
+								updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
+								
+//								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+//								aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
 							}
 							// deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING &&
 							if (deployment_tmp.getOperationalStatus().toLowerCase().equals("terminated")) {
@@ -2014,6 +1925,115 @@ public class MANOController {
 			logger.error(e.getMessage());
 		}
 
+	}
+
+	private void updateDescriptorInRunningState(DeploymentDescriptor deployment_tmp, OSMClient osmClient, JSONObject ns_instance_info) {
+		
+		// JSONObject ns_nslcm_details =
+		// osmClient.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+		
+		String previous_nslcm_details = deployment_tmp.getNs_nslcm_details(); //contains last performed action of array
+		String current_nslcm_details = osmClient
+				.getNSLCMDetailsListByNSID(deployment_tmp.getInstanceId());
+		logger.info("Calling alert on scale");
+		current_nslcm_details = aMANOClient.alertOnScaleOpsList(deployment_tmp, previous_nslcm_details, current_nslcm_details);
+
+		deployment_tmp.setNs_nslcm_details(current_nslcm_details);
+		logger.info("After Calling alert on scale");
+//		deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+
+		//ResponseEntity<String> response=this.performNSInstanceAction("{\"nsInstanceId\": \"1f12d5d7-2ffe-454b-95b5-a805b480303b\",\"member_vnf_index\" : \"1\",\"primitive\" : \"touch\", \"primitive_params\" : {\"filename\" : \"/home/ubuntu/osmclienttest2\"}}");
+		//JSONObject obj = new JSONObject(response.getBody());
+		//String action_id = obj.getString("id");
+		//logger.info("Got action id:"+action_id);
+
+		// *******************************************************************************************************************
+		// Create the payload for
+		//logger.info("Starting scaling");
+		//ANSScaleRequestPayload nsscalerequestpayload = new ANSScaleRequestPayload();
+		//nsscalerequestpayload.setScaleType("SCALE_VNF");
+		//nsscalerequestpayload.setNsInstanceId(deployment_tmp.getInstanceId());
+		//nsscalerequestpayload.getScaleVnfData().getScaleByStepData().setMember_vnf_index("1");
+		//nsscalerequestpayload.getScaleVnfData().getScaleByStepData()
+		//		.setScaling_group_descriptor("apache_vdu_autoscale");
+		//if (Math.random() > 0.5) {
+		//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_IN");
+		//} else {
+		//	nsscalerequestpayload.getScaleVnfData().setScaleVnfType("SCALE_OUT");
+		//}
+		//ResponseEntity<String> response = this
+		//		.performNSInstanceScale(nsscalerequestpayload.toJSON());
+		//logger.info(nsscalerequestpayload.toJSON());
+		//JSONObject obj = new JSONObject(response.getBody());
+		//String action_id = obj.getString("id");
+		//logger.info("Got action id:" + action_id);
+		// *******************************************************************************************************************
+
+
+		
+		//Get the VNF instance ids
+		logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
+		List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
+		Integer q=0;
+		deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
+		for(String constituent_vnfr_ref : constituent_vnfr_refs) 
+		{
+			logger.info("VNF with id "+constituent_vnfr_ref+" found in NS instance info.");									
+			//get the info of the vnf instances
+			JSONObject vnf_instance_info = osmClient.getVNFInstanceInfo(constituent_vnfr_ref);
+			if (vnf_instance_info == null) {
+				deployment_tmp.setFeedback("VNF instance not present in NS Instance Info.");
+			} else {
+				try {											
+					logger.info("Updating vxfPlacementInfo");			
+					logger.info("Before setting vnf instance info");
+					logger.info("VNF Instance information " +vnf_instance_info.toString());
+					logger.info("Initial value for place "+q);
+					logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
+					DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
+					String member_vnf_index_ref = JsonPath.read(vnf_instance_info.toString(), "$.member-vnf-index-ref");
+					tmp.setMemberVnfIndexRef(member_vnf_index_ref);
+					tmp.setVxfInstanceInfo(vnf_instance_info.toString());
+					deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().add(tmp);
+				}
+				catch (Exception e) {
+					logger.error("Failed to load vxfplacements info with error " + e.getMessage());
+				}
+			}
+			q++;
+		}
+
+
+	
+		if (!deployment_tmp.getOperationalStatus()
+				.equals(ns_instance_info.getString("operational-status"))
+				|| !deployment_tmp.getConfigStatus()
+						.equals(ns_instance_info.getString("config-status"))
+				|| !deployment_tmp.getDetailedStatus()
+						.equals(ns_instance_info.getString("detailed-status")
+								.replaceAll("\\n", " ").replaceAll("\'", "'")
+								.replaceAll("\\\\", ""))) {
+			logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+					+ deployment_tmp.getStatus());
+			centralLogger.log(CLevel.INFO, "Status change of deployment "
+					+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
+			deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
+					.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+			if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()<=PackagingFormat.OSMvEIGHT.ordinal())
+			{
+				deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
+			}
+			else if(deployment_tmp.getExperimentFullDetails().getPackagingFormat().ordinal()>PackagingFormat.OSMvEIGHT.ordinal())
+			{
+				deployment_tmp.setConstituentVnfrIps("ToDo");										
+			}
+				
+			deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+			aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
+		} else {
+			deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);			
+		}
+		
 	}
 
 	private String extractIPsFromNSR(JSONObject ns_instance_info) {
