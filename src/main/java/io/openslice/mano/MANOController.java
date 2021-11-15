@@ -877,6 +877,7 @@ public class MANOController {
 
 	private void synchronizeVIMs(OSMClient osmClient, MANOprovider mp)
 	{
+		logger.info("Synchronize VIMs for MANOProvider "+mp.getName());
 		//******************************************************************
 		// Get available VIMs from the portal's Database
 		List<Infrastructure> infrastructures = aMANOClient.getInfrastructures();
@@ -893,7 +894,7 @@ public class MANOController {
 			logger.error("VIMs List Get Request failed. Status Code:" + vims_list_entity.getStatusCode().toString()
 					+ ", Payload:" + vims_list_entity.getBody().toString());
 		} else {
-			logger.info("Got VIM list "+vims_list_entity.getBody());
+			logger.info("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
 			ObjectMapper mapper = new ObjectMapper();
 			try {
 				
