@@ -962,6 +962,10 @@ public class MANOController {
 			{					
 				synchronizeVNFDsOSM10(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
 			}
+			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvELEVEN"))
+			{					
+				synchronizeVNFDsOSM11(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
+			}
 		}		
 	}
 	
@@ -1050,14 +1054,14 @@ public class MANOController {
 					newVxFOnBoardedDescriptor.setVxf(aMANOClient.getVxFById(newVxFMetadata.getId()));
 					//Add VxFOnBoardedDescriptor object to db and get the generated object
 					newVxFOnBoardedDescriptor=aMANOClient.addVxFOnBoardedDescriptor(newVxFOnBoardedDescriptor);
-					logger.info("VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
+					logger.info("synchronizeVNFDsOSM8 : VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
 					
 				}
 			}
 			// Check for orphaned 
-			boolean exists_in_osm = false;
 			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 			{
+				boolean exists_in_osm = false;
 				// For each object
 				for(Vnfd vnfd : vnfd_array)
 				{
@@ -1067,11 +1071,13 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
-					logger.info("VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeVNFDsOSM8 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}						
 		} catch (IllegalStateException | IOException e) {
@@ -1170,9 +1176,9 @@ public class MANOController {
 				}
 			}
 			// Check for orphaned 
-			boolean exists_in_osm = false;
 			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 			{
+				boolean exists_in_osm = false;
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
 				{
@@ -1182,11 +1188,13 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
-					logger.info("VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeVNFDsOSM9 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}			
 		} catch (IllegalStateException | IOException e) {
@@ -1285,9 +1293,9 @@ public class MANOController {
 				}
 			}
 			// Check for orphaned 
-			boolean exists_in_osm = false;
 			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
 			{
+				boolean exists_in_osm = false;
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
 				{
@@ -1297,11 +1305,130 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
-					logger.info("VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeVNFDsOSM10 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
+		} catch (IllegalStateException | IOException e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}			
+	}
+	
+	private void synchronizeVNFDsOSM11(List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			// Parse the json list of objects
+			org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[] vnfd_array = (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[]) mapper.readValue(vnfds_list_entity.getBody(), org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[].class);
+			// For each object
+			for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+			{
+				String jsonInString=null;
+				ObjectMapper mapper2 = new ObjectMapper();
+				mapper2.setSerializationInclusion(Include.NON_NULL);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(vnfd);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+										
+				// Compare db derived data with osm derived data and update the database.
+				logger.info("VNFD to JSON:"+jsonInString);
+				logger.info("VNFD " + vnfd.getId() + " added");						
+
+				// Get the mapped ExperimentMetadata object
+				VxFMetadata prod = mapOSM10VNFD2ProductFromJSON(vnfd);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(prod);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}								
+				logger.info("Prod created:"+jsonInString);	
+				
+				// Now that we have the product
+				// Check if the VxFMetadata uuid already exists in the database
+				
+				boolean exists_in_db = false;
+				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " already exists");
+						exists_in_db = true;
+					}
+				}
+				if(exists_in_db == false)
+				{
+					logger.info("VNFD " + vnfd.getId() + " does not exist. Adding to db.");
+					exists_in_db = true;
+					//Map osm vim to db vim object
+					VxFMetadata newVxFMetadata = new VxFMetadata();
+					newVxFMetadata.setUuid(vnfd.getId());
+					// Combine the vnfd name with the OSM name.
+					newVxFMetadata.setName(vnfd.getProductName());
+					newVxFMetadata.setValidationStatus(ValidationStatus.COMPLETED);
+					newVxFMetadata.setDateCreated(new Date());
+					newVxFMetadata.setDateUpdated(new Date());
+					newVxFMetadata.setShortDescription(vnfd.getProductName()+"@"+mp.getName());
+					newVxFMetadata.setPackagingFormat(PackagingFormat.OSMvELEVEN);
+					//Get the manoServiceOwner to add it							
+					newVxFMetadata.setOwner(aMANOClient.getPortalUserByUsername("manoService"));
+					
+					// Get VNF Requirements from the vnfd
+					OSM10VNFRequirements vnfreq = new OSM10VNFRequirements(vnfd);
+					// Store the requirements in HTML
+					newVxFMetadata.setDescriptorHTML(vnfreq.toHTML());
+					// Store the YAML file
+					newVxFMetadata.setDescriptor(vnfds_list_entity.getBody());
+					
+					//Add VxFMetadata object to db and get the generated object
+					newVxFMetadata = aMANOClient.addVxFMetadata(newVxFMetadata);
+					logger.info("VxF " + vnfd.getId() + " added with VxFMetadata id="+newVxFMetadata.getId());
+					
+					//Create the OnboardedDescriptor
+					VxFOnBoardedDescriptor newVxFOnBoardedDescriptor = new VxFOnBoardedDescriptor(newVxFMetadata);
+					newVxFOnBoardedDescriptor.setDeployId(vnfd.getId());
+					newVxFOnBoardedDescriptor.setFeedbackMessage("Automatically Retrieved from OSM");
+					newVxFOnBoardedDescriptor.setLastOnboarding(new Date());
+					newVxFOnBoardedDescriptor.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+					newVxFOnBoardedDescriptor.setUuid(vnfd.getId());
+					newVxFOnBoardedDescriptor.setVxfMANOProviderID(vnfd.getProductName());
+					newVxFOnBoardedDescriptor.setObMANOprovider(mp);
+					newVxFOnBoardedDescriptor.setVxf(aMANOClient.getVxFById(newVxFMetadata.getId()));
+					//Add VxFOnBoardedDescriptor object to db and get the generated object
+					newVxFOnBoardedDescriptor=aMANOClient.addVxFOnBoardedDescriptor(newVxFOnBoardedDescriptor);
+					logger.info("VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
+					
+				}
+			}
+			// Check for orphaned 
+			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " exists in osm");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
+					logger.info("synchronizeVNFDsOSM11 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}
 		} catch (IllegalStateException | IOException e) {
@@ -1337,6 +1464,10 @@ public class MANOController {
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvTEN"))
 			{					
 				synchronizeNSDsOSM10(experimentOnboardDescriptors, nsds_list_entity, mp);
+			}
+			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvELEVEN"))
+			{					
+				synchronizeNSDsOSM11(experimentOnboardDescriptors, nsds_list_entity, mp);
 			}
 		}		
 	}
@@ -1454,12 +1585,14 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to Orphaned");
-					dbexpobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM8 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeNSDsOSM8 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}			
 		} catch (IllegalStateException | IOException e) {
@@ -1577,18 +1710,21 @@ public class MANOController {
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
 				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
 					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to Orphaned");
-					dbexpobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM9 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeNSDsOSM9 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}			
 		} catch (IllegalStateException | IOException e) {
@@ -1709,18 +1845,21 @@ public class MANOController {
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
 				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
 					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
 						exists_in_osm = true;
 					}
 				}
-				if(exists_in_osm == false)
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to Orphaned");
-					dbexpobd.setOnBoardingStatus(OnBoardingStatus.ORPHANED);
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM10 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
-					logger.info("ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to Orphaned");
+					logger.info("synchronizeNSDsOSM10 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
 				}
 			}
 			
@@ -1729,7 +1868,143 @@ public class MANOController {
 			e.printStackTrace();
 		}			
 	}
-	
+
+	private void synchronizeNSDsOSM11(List<ExperimentOnBoardDescriptor> experimentOnBoardDescriptors, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			// Parse the json list of objects
+			org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[] nsd_array = (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[]) mapper.readValue(nsds_list_entity.getBody(), org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[].class);
+			// For each object
+			for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+			{
+				String jsonInString=null;
+				ObjectMapper mapper2 = new ObjectMapper();
+				mapper2.setSerializationInclusion(Include.NON_NULL);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(nsd);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+										
+				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
+				logger.info("NSD to JSON:"+jsonInString);
+				logger.info("NSD " + nsd.getInvariantId() + " added");						
+
+				// Get the mapped ExperimentMetadata object
+				ExperimentMetadata prod = mapOSM10NSD2ProductFromJSON(nsd,mp);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(prod);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}								
+				logger.info("Prod created:"+jsonInString);	
+				
+				// Now that we have the product
+				// Check if the ExperimentMetadata uuid already exists in the database
+				
+				boolean exists_in_db = false;
+				for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+				{
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + nsd.getInvariantId() + " already exists");
+						exists_in_db = true;
+					}
+				}						
+				if(exists_in_db == false)
+				{
+					logger.info("NSD " + nsd.getInvariantId() + " does not exist. Adding to db.");
+					exists_in_db = true;
+					//Map osm vim to db vim object
+					ExperimentMetadata newExperimentMetadata = new ExperimentMetadata();
+					newExperimentMetadata.setUuid(nsd.getInvariantId());
+					// Combine the vnfd name with the OSM name.
+					newExperimentMetadata.setName(nsd.getName());
+					newExperimentMetadata.setValidationStatus(ValidationStatus.COMPLETED);
+					newExperimentMetadata.setDateCreated(new Date());
+					newExperimentMetadata.setDateUpdated(new Date());
+					newExperimentMetadata.setShortDescription(nsd.getName()+"@"+mp.getName());
+					newExperimentMetadata.setPackagingFormat(PackagingFormat.OSMvELEVEN);
+					//Get the manoServiceOwner to add it							
+					newExperimentMetadata.setOwner(aMANOClient.getPortalUserByUsername("manoService"));
+					
+					// Get VNF Requirements from the vnfd
+					OSM10NSRequirements nsdreq = new OSM10NSRequirements(nsd);
+					// Store the requirements in HTML
+					newExperimentMetadata.setDescriptorHTML(nsdreq.toHTML());
+					// Store the YAML file
+					newExperimentMetadata.setDescriptor(nsds_list_entity.getBody());
+					
+					for (Df v : nsd.getDf().values()) {
+						for( VnfProfile q : v.getVnfProfile().values())
+						{
+							ConstituentVxF cvxf = new ConstituentVxF();
+							try {
+								cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+								
+							} catch ( NumberFormatException e) {
+								cvxf.setMembervnfIndex( 0 );
+							}
+							cvxf.setVnfdidRef((String) q.getVnfdId());
+							String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
+							VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
+							cvxf.setVxfref(vxf);
+							((ExperimentMetadata) newExperimentMetadata).getConstituentVxF().add(cvxf);					
+						}
+					}					
+					//Add VxFMetadata object to db and get the generated object
+					newExperimentMetadata = aMANOClient.addExperimentMetadata(newExperimentMetadata);
+					logger.info("Experiment " + nsd.getId() + " added with ExperimentMetadata id="+newExperimentMetadata.getId());
+					
+					//Create the OnboardedDescriptor
+					ExperimentOnBoardDescriptor newExperimentOnBoardedDescriptor = new ExperimentOnBoardDescriptor(newExperimentMetadata);
+					newExperimentOnBoardedDescriptor.setDeployId(nsd.getInvariantId());
+					newExperimentOnBoardedDescriptor.setFeedbackMessage("Automatically Retrieved from OSM");
+					newExperimentOnBoardedDescriptor.setLastOnboarding(new Date());
+					newExperimentOnBoardedDescriptor.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+					newExperimentOnBoardedDescriptor.setUuid(nsd.getInvariantId());
+					newExperimentOnBoardedDescriptor.setExperimentMANOProviderID(nsd.getName());
+					newExperimentOnBoardedDescriptor.setObMANOprovider(mp);
+					newExperimentOnBoardedDescriptor.setExperiment(aMANOClient.getNSDById(newExperimentMetadata.getId()));					
+					//Add VxFOnBoardedDescriptor object to db and get the generated object
+					newExperimentOnBoardedDescriptor=aMANOClient.addExperimentOnBoardedDescriptor(newExperimentOnBoardedDescriptor);
+					logger.info("ExperimentOnBoardedDescriptor " + newExperimentOnBoardedDescriptor.getId() + " added");
+				}						
+			}					
+			// Check for orphaned 
+			for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
+					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
+			
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}			
+	}
+
 	public VxFMetadata mapOSM8VNFD2ProductFromJSON(Vnfd vnfd) {
 		
 		VxFMetadata prod = new VxFMetadata();
