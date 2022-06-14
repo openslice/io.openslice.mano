@@ -810,7 +810,7 @@ public class MANOController {
 		List<DeploymentDescriptor> DeploymentDescriptorsToComplete = aMANOClient.getDeploymentsToBeCompleted();
 		// For each deployment
 		for (DeploymentDescriptor deployment_descriptor_tmp : DeploymentDescriptorsToComplete) {
-			logger.debug("Deployment with id" + deployment_descriptor_tmp.getName() + " with status "
+			logger.info("Deployment with id" + deployment_descriptor_tmp.getName() + " with status "
 					+ deployment_descriptor_tmp.getStatus() + " is going to be terminated");
 
 			// Terminate the deployment
@@ -949,7 +949,7 @@ public class MANOController {
 			logger.error("VNFDs List Get Request failed. Status Code:" + vnfds_list_entity.getStatusCode().toString()
 					+ ", Payload:" + vnfds_list_entity.getBody().toString());
 		} else {
-			logger.info("Got VNFD list "+vnfds_list_entity.getBody());
+			logger.debug("Got VNFD list "+vnfds_list_entity.getBody());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
 				synchronizeVNFDsOSM8(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
@@ -989,7 +989,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1000,7 +1000,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1106,7 +1106,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1117,7 +1117,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1223,7 +1223,7 @@ public class MANOController {
 				}	
 										
 				// Compare db derived data with osm derived data and update the database.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1234,7 +1234,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1340,7 +1340,7 @@ public class MANOController {
 				}	
 										
 				// Compare db derived data with osm derived data and update the database.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1351,7 +1351,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1451,7 +1451,7 @@ public class MANOController {
 			logger.error("NSDs List Get Request failed. Status Code:" + nsds_list_entity.getStatusCode().toString()
 					+ ", Payload:" + nsds_list_entity.getBody().toString());
 		} else {
-			logger.info("Got NSD list "+nsds_list_entity.getBody());
+			logger.debug("Got NSD list "+nsds_list_entity.getBody());
 			logger.info("Got MP Version:"+mp.getSupportedMANOplatform().getVersion());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
@@ -1492,7 +1492,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getId()+ " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1503,7 +1503,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1621,7 +1621,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getInvariantId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1632,7 +1632,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1753,7 +1753,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getInvariantId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1764,7 +1764,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1889,7 +1889,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getInvariantId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1900,7 +1900,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -2176,7 +2176,7 @@ public class MANOController {
 			List<DeploymentDescriptor> runningDeploymentDescriptors = aMANOClient
 					.getRunningInstantiatingAndTerminatingDeployments();
 			for (DeploymentDescriptor nsd : runningDeploymentDescriptors) {
-				System.out.println("NSD name:" + nsd.getName());
+				logger.info("NSD name:" + nsd.getName());
 			}
 			OSMClient osmClient = null;			
 			// For each deployment get the status info and the IPs
@@ -2370,7 +2370,7 @@ public class MANOController {
 
 		
 		//Get the VNF instance ids
-		logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
+		logger.debug("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
 		List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
 		Integer q=0;
 		deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
@@ -2384,10 +2384,8 @@ public class MANOController {
 			} else {
 				try {											
 					logger.info("Updating vxfPlacementInfo");			
-					logger.info("Before setting vnf instance info");
-					logger.info("VNF Instance information " +vnf_instance_info.toString());
-					logger.info("Initial value for place "+q);
-					logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
+					logger.debug("VNF Instance information " +vnf_instance_info.toString());
+					logger.debug("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
 					DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
 					String member_vnf_index_ref = JsonPath.read(vnf_instance_info.toString(), "$.member-vnf-index-ref");
 					tmp.setMemberVnfIndexRef(member_vnf_index_ref);
@@ -2458,7 +2456,7 @@ public class MANOController {
 				IPinfo.append("]\n");
 			}
 
-			logger.info(IPinfo);
+			logger.debug(IPinfo);
 			return IPinfo.toString();
 
 		} catch (Exception e) {
@@ -2468,10 +2466,10 @@ public class MANOController {
 	}
 
 	private ExperimentOnBoardDescriptor getExperimOBD(DeploymentDescriptor deployment_tmp) {
-		logger.info( "getExperimOBD start");
+		logger.debug( "getExperimOBD start");
 		for (ExperimentOnBoardDescriptor e : deployment_tmp.getExperimentFullDetails()
 				.getExperimentOnBoardDescriptors()) {
-			logger.info( "getExperimOBD:"+ e.toString());
+			logger.debug( "getExperimOBD:"+ e.toString());
 			return e; // return the first one found
 		}
 		return null;
@@ -2536,7 +2534,7 @@ public class MANOController {
 				// NS action starts
 				logger.info("NS action of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 				// Save the changes to DeploymentDescriptor
-				logger.info("NS action Status Code:" + ns_action_entity.getStatusCode().toString() + ", Payload:"
+				logger.debug("NS action Status Code:" + ns_action_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_action_entity.getBody().toString());
 			}
 			// Get the response id or failure
@@ -2610,7 +2608,7 @@ public class MANOController {
 			// NS action starts
 			logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 			// Save the changes to DeploymentDescriptor
-			logger.info("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+			logger.debug("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
 					+ ns_scale_entity.getBody().toString());
 		}
 		// Get the response id or failure
@@ -2668,7 +2666,7 @@ public class MANOController {
 				// NS action starts
 				logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 				// Save the changes to DeploymentDescriptor
-				logger.info("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+				logger.debug("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_scale_entity.getBody().toString());
 			}
 			// Get the response id or failure
@@ -2693,15 +2691,15 @@ public class MANOController {
 	}
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
-		logger.info("Starting deployNSDToMANOProvicer");
+		logger.debug("Starting deployNSDToMANOProvicer");
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
-		logger.info("Starting getExperimOBD");
+		logger.debug("Starting getExperimOBD");
 		ExperimentOnBoardDescriptor tmp = deploymentdescriptor.getObddescriptor_uuid();		
-		logger.info("The loaded obddescriptor contains:"+tmp.toJSON());
-		logger.info("Starting connection to osm");
+		logger.debug("The loaded obddescriptor contains:"+tmp.toJSON());
+		logger.debug("Starting connection to osm");
 		OSMClient osmClient = null;
 		try {
-			logger.info("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+			logger.debug("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 					+ " MANO Client of version " + tmp.getObMANOprovider().getSupportedMANOplatform().getVersion()
 					+ ".");
 			osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getVersion(),
@@ -2727,19 +2725,19 @@ public class MANOController {
 			// aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
 			return;
 		}
-		logger.info("Connected to OSM");
+		logger.debug("Connected to OSM");
 		NSCreateInstanceRequestPayload nscreateinstancerequestpayload = null;
 		String nscreateinstancerequestpayload_json = null;
 		if (deploymentdescriptor.getInstantiationconfig() != null) {
 			nscreateinstancerequestpayload_json = deploymentdescriptor.getInstantiationconfig();
-			logger.info("Found and parsed instantiation configuration " + nscreateinstancerequestpayload_json);
+			logger.debug("Found and parsed instantiation configuration " + nscreateinstancerequestpayload_json);
 		} else {
 			logger.info("Could not find or parse instantiation configuration from user. Getting default configuration");
 			nscreateinstancerequestpayload = new NSCreateInstanceRequestPayload(deploymentdescriptor);
 			nscreateinstancerequestpayload_json = nscreateinstancerequestpayload.toJSON();
 		}
 		// Get Experiment ID and VIM ID and create NS Instance.
-		logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
+		logger.debug("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
 		ResponseEntity<String> ns_instance_creation_entity = osmClient
 				.createNSInstance(nscreateinstancerequestpayload_json);
 		// The NS Instance ID is set
@@ -2754,11 +2752,10 @@ public class MANOController {
 			logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus());
 			deploymentdescriptor.setFeedback(ns_instance_creation_entity.getBody().toString());
-			logger.info("Update DeploymentDescriptor Object in 785");
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 					.updateDeploymentDescriptor(deploymentdescriptor);
 			aMANOClient.deploymentInstantiationFailed(deploymentdescriptor_final);
-			logger.info(
+			logger.debug(
 					"NS Instance creation failed with response: " + ns_instance_creation_entity.getBody().toString());
 		} else {
 			// String nsr_id =
@@ -2770,13 +2767,13 @@ public class MANOController {
 			// Instantiate NS Instance
 			// NSInstantiateInstanceRequestPayload nsrequestpayload = new
 			// NSInstantiateInstanceRequestPayload(deploymentdescriptor);
-			// logger.info("NS Instantiation payload : " + nsrequestpayload.toJSON());
+			// logger.debug("NS Instantiation payload : " + nsrequestpayload.toJSON());
 
 			NSInstantiateInstanceRequestPayload nsrequestpayload = null;
 			String nsrequestpayload_json = null;
 			if (deploymentdescriptor.getInstantiationconfig() != null) {
 				nsrequestpayload_json = deploymentdescriptor.getInstantiationconfig();
-				logger.info("Found and parsed instantiation configuration " + nsrequestpayload_json);
+				logger.debug("Found and parsed instantiation configuration " + nsrequestpayload_json);
 			} else {
 				logger.info(
 						"Could not find or parse instantiation configuration from user. Getting default configuration");
@@ -2784,7 +2781,7 @@ public class MANOController {
 				nsrequestpayload_json = nscreateinstancerequestpayload.toJSON();
 			}
 			// Get Experiment ID and VIM ID and create NS Instance.
-			logger.info("NS Instance creation payload : " + nsrequestpayload_json);
+			logger.debug("NS Instance creation payload : " + nsrequestpayload_json);
 
 			// Here we need the feedback
 			// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
@@ -2801,7 +2798,7 @@ public class MANOController {
 				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
-				logger.info("NS Instantiation failed. Status Code:"
+				logger.debug("NS Instantiation failed. Status Code:"
 						+ instantiate_ns_instance_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_instance_creation_entity.getBody().toString());
 				// Save the changes to DeploymentDescriptor
@@ -2854,7 +2851,6 @@ public class MANOController {
 							+ deploymentdescriptor.getStatus());
 					deploymentdescriptor.setFeedback(response.getBody().toString());
 					logger.error("Termination of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
-					logger.info("Update DeploymentDescriptor Object in 877");
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 							.updateDeploymentDescriptor(deploymentdescriptor);
 					logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
@@ -2889,7 +2885,7 @@ public class MANOController {
 		logger.info("Will delete with deploymentdescriptorid : " + deploymentdescriptorid);
 		String aMANOplatform = "";
 		try {
-			logger.info("MANOplatform: " + aMANOplatform);
+			logger.debug("MANOplatform: " + aMANOplatform);
 			aMANOplatform = deploymentdescriptor.getObddescriptor_uuid().getObMANOprovider().getSupportedMANOplatform().getVersion();
 		} catch (Exception e) {
 			aMANOplatform = "UNKNOWN";
@@ -2949,7 +2945,6 @@ public class MANOController {
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(deletion_response.getBody().toString());
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
-				logger.info("Update DeploymentDescriptor Object in 969");
 				DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 						.updateDeploymentDescriptor(deploymentdescriptor);
 				logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
@@ -3326,7 +3321,6 @@ public class MANOController {
 		
 	public void getScaleAlert(String body)
 	{
-		System.out.println("Scaling message received with body");
 		logger.info("Scaling message received with body");
 	}
 	
