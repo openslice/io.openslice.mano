@@ -737,7 +737,45 @@ public class MANOClient {
 		return infrastructure;
 	}
 
+	public Infrastructure updateInfrastructure(Infrastructure infrastructure2send) {
+		// Serialize the received object
+		ObjectMapper mapper = new ObjectMapper();
+		// Registering Hibernate4Module to support lazy objects
+		// this will fetch all lazy objects of VxF before marshaling
+		// mapper.registerModule(new Hibernate5Module());
+		String infrastructure_serialized = null;
+		try {
+			infrastructure_serialized = mapper.writeValueAsString(infrastructure2send);
+		} catch (JsonProcessingException e2) {
+			// TODO Auto-generated catch block
+			logger.error(e2.getMessage());
+		}
+		logger.debug("Sending Message " + infrastructure_serialized + " to updateInfrastructure from AMQ:");
+		// Send it to activemq endpoint
+		String ret = template.requestBody("activemq:queue:updateInfrastructure", infrastructure_serialized, String.class);
+		logger.debug("Message Received for addInstrastructure from AMQ:" + ret);
 
+		// Get the response and Map object to ExperimentMetadata
+		Infrastructure infrastructure = null;
+		try {
+			// Map object to VxFOnBoardedDescriptor
+			mapper = new ObjectMapper();
+			logger.debug("From ActiveMQ:" + ret.toString());
+			infrastructure = mapper.readValue(ret, Infrastructure.class);
+		} catch (JsonParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (JsonMappingException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e11) {
+			// TODO Auto-generated catch block
+			e11.printStackTrace();
+		}
+		return infrastructure;
+	}
+	
+	
 	public PortalUser getPortalUserByUsername(String username) {
 		
 		// Serialize the received object

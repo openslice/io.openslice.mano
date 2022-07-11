@@ -63,6 +63,7 @@ import io.openslice.model.DeploymentDescriptorVxFPlacement;
 import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.Infrastructure;
+import io.openslice.model.InfrastructureStatus;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
 import io.openslice.model.PackagingFormat;
@@ -882,26 +883,27 @@ public class MANOController {
 		List<Infrastructure> infrastructures = aMANOClient.getInfrastructures();
 		for(int j = 0; j < infrastructures.size(); j++)
 		{
-			logger.info(" Found VIM with id:"+infrastructures.get(j).toJSON());
+			logger.debug("Found VIM with id:"+infrastructures.get(j).toJSON());
 			//centralLogger.log( CLevel.INFO, "Synchronize VIM with id:"+infrastructures.get(j).getVIMid() , compname);
 		}				
 		//******************************************************************
 		// Get VIMs from OSM MANO.
 		ResponseEntity<String> vims_list_entity = osmClient.getVIMs();
+		VIMCreateRequestPayload[] vim_osm_array;
 		if (vims_list_entity == null || vims_list_entity.getStatusCode().is4xxClientError()
 				|| vims_list_entity.getStatusCode().is5xxServerError()) {
 			logger.error("VIMs List Get Request failed. Status Code:" + vims_list_entity.getStatusCode().toString()
 					+ ", Payload:" + vims_list_entity.getBody().toString());
 		} else {
-			logger.info("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
+			logger.debug("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
 			ObjectMapper mapper = new ObjectMapper();
 			try {
 				
-				VIMCreateRequestPayload[] vim_array = (VIMCreateRequestPayload[]) mapper.readValue(vims_list_entity.getBody(), VIMCreateRequestPayload[].class);
-				for(VIMCreateRequestPayload vim : vim_array)
+				vim_osm_array = (VIMCreateRequestPayload[]) mapper.readValue(vims_list_entity.getBody(), VIMCreateRequestPayload[].class);
+				for(VIMCreateRequestPayload vim : vim_osm_array)
 				{
 					// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-					logger.info("VIM to JSON:"+vim.toJSON());
+					logger.debug("VIM to JSON:"+vim.toJSON());
 					boolean exists_in_db = false;
 					for(Infrastructure dbvim : infrastructures)
 					{
@@ -920,6 +922,7 @@ public class MANOController {
 						newInfrastructure.setOrganization(vim.getName());
 						newInfrastructure.setDatacentername(vim.getDatacenter());
 						newInfrastructure.setMp(mp);
+						newInfrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_PRESENT);
 						//newInfrastructure.setMANOProvider(mps.get(i).getId());
 						//Add object to db
 						aMANOClient.addInfrastructure(newInfrastructure);
@@ -930,7 +933,37 @@ public class MANOController {
 			} catch (IllegalStateException | IOException e) {
 				logger.error(e.getMessage());
 				e.printStackTrace();
-			}				
+				return;
+			}	
+			
+			// Check for orphaned 
+			for(Infrastructure infrastructure : infrastructures)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(VIMCreateRequestPayload vim : vim_osm_array)
+				{
+					// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
+					logger.debug("VIM to JSON:"+vim.toJSON());
+					if(infrastructure.getVIMid().equals(vim.get_id()))
+					{
+						logger.info("VIM "+vim.get_id()+" still exists in osm");
+						exists_in_osm = true;
+						infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_PRESENT);
+						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
+						logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_PRESENT");
+					}
+					if(exists_in_osm == false && infrastructure.getMp().getName().equals(mp.getName()) && infrastructure.getMp().getProject().equals(mp.getProject()))
+					{
+						logger.info("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
+						exists_in_osm = false;
+						infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_MISSING);
+						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
+						logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_MISSING");
+					}
+				}
+			}						
+			
 		}						
 	}
 	
