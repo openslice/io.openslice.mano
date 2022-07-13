@@ -898,7 +898,6 @@ public class MANOController {
 			logger.debug("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
 			ObjectMapper mapper = new ObjectMapper();
 			try {
-				
 				vim_osm_array = (VIMCreateRequestPayload[]) mapper.readValue(vims_list_entity.getBody(), VIMCreateRequestPayload[].class);
 				for(VIMCreateRequestPayload vim : vim_osm_array)
 				{
@@ -922,7 +921,9 @@ public class MANOController {
 						newInfrastructure.setOrganization(vim.getName());
 						newInfrastructure.setDatacentername(vim.getDatacenter());
 						newInfrastructure.setMp(mp);
+						newInfrastructure.setDatacentername(mp.getName());
 						newInfrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_PRESENT);
+						newInfrastructure.setDateCreated(new Date());
 						//newInfrastructure.setMANOProvider(mps.get(i).getId());
 						//Add object to db
 						aMANOClient.addInfrastructure(newInfrastructure);
