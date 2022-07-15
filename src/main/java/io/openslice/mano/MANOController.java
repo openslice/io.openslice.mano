@@ -967,7 +967,7 @@ public class MANOController {
 					}
 					catch(Exception e)
 					{
-						logger.error("Possible missing MP for VIM with id "+vim.get_id()+". VIM OSM Presence check failed and skipped.");;
+						logger.error("Possible missing MP for VIM with id "+infrastructure.getVIMid()+". VIM OSM Presence check failed and skipped.");;
 					}
 				}
 			}						
