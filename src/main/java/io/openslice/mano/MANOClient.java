@@ -126,8 +126,7 @@ public class MANOClient {
 			nsds = mapper.readValue(ret, new TypeReference<List<DeploymentDescriptor>>() {
 			});
 			for (int i = 0; i < nsds.size(); i++) {
-				logger.info(
-						"The detailed status of " + nsds.get(i).getName() + " is " + nsds.get(i).getDetailedStatus());
+				logger.info("The detailed status of " + nsds.get(i).getName() + " is " + nsds.get(i).getDetailedStatus());
 			}
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block

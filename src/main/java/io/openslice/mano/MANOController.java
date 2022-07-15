@@ -954,13 +954,20 @@ public class MANOController {
 						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
 						logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_PRESENT");
 					}
-					if(exists_in_osm == false && infrastructure.getMp().getName().equals(mp.getName()) && infrastructure.getMp().getProject().equals(mp.getProject()))
+					try
 					{
-						logger.info("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
-						exists_in_osm = false;
-						infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_MISSING);
-						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
-						logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_MISSING");
+						if(exists_in_osm == false && infrastructure.getMp().getName().equals(mp.getName()) && infrastructure.getMp().getProject().equals(mp.getProject()))
+						{
+							logger.info("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
+							exists_in_osm = false;
+							infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_MISSING);
+							infrastructure = aMANOClient.updateInfrastructure(infrastructure);
+							logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_MISSING");
+						}
+					}
+					catch(Exception e)
+					{
+						logger.error("Possible missing MP for VIM with id "+vim.get_id()+". VIM OSM Presence check failed and skipped.");;
 					}
 				}
 			}						
