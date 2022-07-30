@@ -86,6 +86,9 @@ public class MANOClient {
 
 	@Value("${spring.application.name}")
 	private String compname;
+	
+	@Value("${NFV_CATALOG_NS_LCMCHANGED}")
+	private String NFV_CATALOG_NS_LCMCHANGED = "";
 
 	public VxFOnBoardedDescriptor getVxFOnBoardedDescriptorByID(long id) {
 		String ret = template.requestBody("activemq:queue:getVxFOnBoardedDescriptorByID", id, String.class);
@@ -1284,5 +1287,32 @@ public class MANOClient {
 		}
 		return previous;
 	}
+	
 
+	
+	/**
+	 * @param deployment_tmp 
+	 * @return 
+	 */
+	public String notifyOnLCMChanged(DeploymentDescriptor deployment_tmp) {
+		
+		
+		String body;
+		try {
+			body = toJsonString( deployment_tmp );
+			logger.info("create  body = " + body);
+			Object response = template.requestBody( NFV_CATALOG_NS_LCMCHANGED, body);
+			return response.toString();
+		} catch (IOException e) {
+			logger.error("Message failed notifyOnLCMChanged");
+			e.printStackTrace();
+		}
+		return null;		
+	}
+
+	static String toJsonString(Object object) throws IOException {
+		ObjectMapper mapper = new ObjectMapper();
+		mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+		return mapper.writeValueAsString(object);
+	}
 }

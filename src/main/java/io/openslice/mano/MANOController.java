@@ -2473,13 +2473,15 @@ public class MANOController {
 		}
 		
 		
-//		if ( (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) && 
-//				!previous_nslcm_details.equals( deployment_tmp.getNs_nslcm_details() ) ) {
-//			deployment_tmp.get
-//			publish topic event that NSLCM changed
-//			
-//		}
-//		
+		/**
+		 * publish topic event that NSLCM changed
+		 */
+		if ( (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) && 
+				!previous_nslcm_details.equals( deployment_tmp.getNs_nslcm_details() ) ) {
+			aMANOClient.notifyOnLCMChanged( deployment_tmp );
+			
+		}
+		
 		
 	}
 
