@@ -2476,10 +2476,10 @@ public class MANOController {
 		/**
 		 * publish topic event that NSLCM changed
 		 */
-		if ( (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) && 
+		if ( 
 				!previous_nslcm_details.equals( deployment_tmp.getNs_nslcm_details() ) ) {
+			logger.info("Calling notifyOnLCMChanged");
 			aMANOClient.notifyOnLCMChanged( deployment_tmp );
-			
 		}
 		
 		
