@@ -63,6 +63,7 @@ import io.openslice.model.DeploymentDescriptorVxFPlacement;
 import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.Infrastructure;
+import io.openslice.model.InfrastructureStatus;
 import io.openslice.model.MANOprovider;
 import io.openslice.model.OnBoardingStatus;
 import io.openslice.model.PackagingFormat;
@@ -810,7 +811,7 @@ public class MANOController {
 		List<DeploymentDescriptor> DeploymentDescriptorsToComplete = aMANOClient.getDeploymentsToBeCompleted();
 		// For each deployment
 		for (DeploymentDescriptor deployment_descriptor_tmp : DeploymentDescriptorsToComplete) {
-			logger.debug("Deployment with id" + deployment_descriptor_tmp.getName() + " with status "
+			logger.info("Deployment with id" + deployment_descriptor_tmp.getName() + " with status "
 					+ deployment_descriptor_tmp.getStatus() + " is going to be terminated");
 
 			// Terminate the deployment
@@ -849,7 +850,6 @@ public class MANOController {
 	public void checkAndUpdateMANOProvidersResources() {
 
 		// Get MANO Providers
-		//List<MANOprovider> mps = aMANOClient.getMANOproviders();
 		List<MANOprovider> mps = aMANOClient.getMANOprovidersForSync();
 		// For each MANO Provider
 		for (int i = 0; i < mps.size(); i++) 
@@ -883,26 +883,26 @@ public class MANOController {
 		List<Infrastructure> infrastructures = aMANOClient.getInfrastructures();
 		for(int j = 0; j < infrastructures.size(); j++)
 		{
-			logger.info(" Found VIM with id:"+infrastructures.get(j).toJSON());
+			logger.debug("Found VIM with id:"+infrastructures.get(j).toJSON());
 			//centralLogger.log( CLevel.INFO, "Synchronize VIM with id:"+infrastructures.get(j).getVIMid() , compname);
 		}				
 		//******************************************************************
 		// Get VIMs from OSM MANO.
 		ResponseEntity<String> vims_list_entity = osmClient.getVIMs();
+		VIMCreateRequestPayload[] vim_osm_array;
 		if (vims_list_entity == null || vims_list_entity.getStatusCode().is4xxClientError()
 				|| vims_list_entity.getStatusCode().is5xxServerError()) {
 			logger.error("VIMs List Get Request failed. Status Code:" + vims_list_entity.getStatusCode().toString()
 					+ ", Payload:" + vims_list_entity.getBody().toString());
 		} else {
-			logger.info("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
+			logger.debug("Got VIM list for MANOProvider "+mp.getName()+": "+vims_list_entity.getBody());
 			ObjectMapper mapper = new ObjectMapper();
 			try {
-				
-				VIMCreateRequestPayload[] vim_array = (VIMCreateRequestPayload[]) mapper.readValue(vims_list_entity.getBody(), VIMCreateRequestPayload[].class);
-				for(VIMCreateRequestPayload vim : vim_array)
+				vim_osm_array = (VIMCreateRequestPayload[]) mapper.readValue(vims_list_entity.getBody(), VIMCreateRequestPayload[].class);
+				for(VIMCreateRequestPayload vim : vim_osm_array)
 				{
 					// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-					logger.info("VIM to JSON:"+vim.toJSON());
+					logger.debug("VIM to JSON:"+vim.toJSON());
 					boolean exists_in_db = false;
 					for(Infrastructure dbvim : infrastructures)
 					{
@@ -921,6 +921,9 @@ public class MANOController {
 						newInfrastructure.setOrganization(vim.getName());
 						newInfrastructure.setDatacentername(vim.getDatacenter());
 						newInfrastructure.setMp(mp);
+						newInfrastructure.setDatacentername(mp.getName());
+						newInfrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_PRESENT);
+						newInfrastructure.setDateCreated(new Date());
 						//newInfrastructure.setMANOProvider(mps.get(i).getId());
 						//Add object to db
 						aMANOClient.addInfrastructure(newInfrastructure);
@@ -931,7 +934,44 @@ public class MANOController {
 			} catch (IllegalStateException | IOException e) {
 				logger.error(e.getMessage());
 				e.printStackTrace();
-			}				
+				return;
+			}	
+			
+			// Check for orphaned 
+			for(Infrastructure infrastructure : infrastructures)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(VIMCreateRequestPayload vim : vim_osm_array)
+				{
+					// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
+					logger.debug("VIM to JSON:"+vim.toJSON());
+					if(infrastructure.getVIMid().equals(vim.get_id()))
+					{
+						logger.info("VIM "+vim.get_id()+" still exists in osm");
+						exists_in_osm = true;
+						infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_PRESENT);
+						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
+						logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_PRESENT");
+					}
+					try
+					{
+						if(exists_in_osm == false && infrastructure.getMp().getName().equals(mp.getName()) && infrastructure.getMp().getProject().equals(mp.getProject()))
+						{
+							logger.info("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
+							exists_in_osm = false;
+							infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_MISSING);
+							infrastructure = aMANOClient.updateInfrastructure(infrastructure);
+							logger.info("synchronizeVIMs: Infrastructure " + infrastructure.getVIMid() + " updated Infrastructure status to OSM_MISSING");
+						}
+					}
+					catch(Exception e)
+					{
+						logger.error("Possible missing MP for VIM with id "+infrastructure.getVIMid()+". VIM OSM Presence check failed and skipped.");;
+					}
+				}
+			}						
+			
 		}						
 	}
 	
@@ -950,7 +990,7 @@ public class MANOController {
 			logger.error("VNFDs List Get Request failed. Status Code:" + vnfds_list_entity.getStatusCode().toString()
 					+ ", Payload:" + vnfds_list_entity.getBody().toString());
 		} else {
-			logger.info("Got VNFD list "+vnfds_list_entity.getBody());
+			logger.debug("Got VNFD list "+vnfds_list_entity.getBody());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
 				synchronizeVNFDsOSM8(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
@@ -962,6 +1002,10 @@ public class MANOController {
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvTEN"))
 			{					
 				synchronizeVNFDsOSM10(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
+			}
+			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvELEVEN"))
+			{					
+				synchronizeVNFDsOSM11(vxFOnBoardedDescriptors, vnfds_list_entity, mp);
 			}
 		}		
 	}
@@ -986,7 +1030,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -997,7 +1041,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1051,10 +1095,32 @@ public class MANOController {
 					newVxFOnBoardedDescriptor.setVxf(aMANOClient.getVxFById(newVxFMetadata.getId()));
 					//Add VxFOnBoardedDescriptor object to db and get the generated object
 					newVxFOnBoardedDescriptor=aMANOClient.addVxFOnBoardedDescriptor(newVxFOnBoardedDescriptor);
-					logger.info("VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
+					logger.info("synchronizeVNFDsOSM8 : VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
 					
 				}
 			}
+			// Check for orphaned 
+			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(Vnfd vnfd : vnfd_array)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " exists in osm");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
+					logger.info("synchronizeVNFDsOSM8 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}						
 		} catch (IllegalStateException | IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -1081,7 +1147,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("VNFD to JSON:"+jsonInString);
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1092,7 +1158,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1150,6 +1216,28 @@ public class MANOController {
 					
 				}
 			}
+			// Check for orphaned 
+			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " exists in osm");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
+					logger.info("synchronizeVNFDsOSM9 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}			
 		} catch (IllegalStateException | IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -1175,8 +1263,8 @@ public class MANOController {
 					e.printStackTrace();
 				}	
 										
-				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("VNFD to JSON:"+jsonInString);
+				// Compare db derived data with osm derived data and update the database.
+				logger.debug("VNFD to JSON:"+jsonInString);
 				logger.info("VNFD " + vnfd.getId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1187,7 +1275,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the VxFMetadata uuid already exists in the database
@@ -1245,6 +1333,145 @@ public class MANOController {
 					
 				}
 			}
+			// Check for orphaned 
+			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " exists in osm");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
+					logger.info("synchronizeVNFDsOSM10 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
+		} catch (IllegalStateException | IOException e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}			
+	}
+	
+	private void synchronizeVNFDsOSM11(List<VxFOnBoardedDescriptor> vxFOnBoardedDescriptors, ResponseEntity<String> vnfds_list_entity, MANOprovider mp)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			// Parse the json list of objects
+			org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[] vnfd_array = (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[]) mapper.readValue(vnfds_list_entity.getBody(), org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd[].class);
+			// For each object
+			for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+			{
+				String jsonInString=null;
+				ObjectMapper mapper2 = new ObjectMapper();
+				mapper2.setSerializationInclusion(Include.NON_NULL);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(vnfd);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+										
+				// Compare db derived data with osm derived data and update the database.
+				logger.debug("VNFD to JSON:"+jsonInString);
+				logger.info("VNFD " + vnfd.getId() + " added");						
+
+				// Get the mapped ExperimentMetadata object
+				VxFMetadata prod = mapOSM10VNFD2ProductFromJSON(vnfd);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(prod);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}								
+				logger.debug("Prod created:"+jsonInString);	
+				
+				// Now that we have the product
+				// Check if the VxFMetadata uuid already exists in the database
+				
+				boolean exists_in_db = false;
+				for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " already exists");
+						exists_in_db = true;
+					}
+				}
+				if(exists_in_db == false)
+				{
+					logger.info("VNFD " + vnfd.getId() + " does not exist. Adding to db.");
+					exists_in_db = true;
+					//Map osm vim to db vim object
+					VxFMetadata newVxFMetadata = new VxFMetadata();
+					newVxFMetadata.setUuid(vnfd.getId());
+					// Combine the vnfd name with the OSM name.
+					newVxFMetadata.setName(vnfd.getProductName());
+					newVxFMetadata.setValidationStatus(ValidationStatus.COMPLETED);
+					newVxFMetadata.setDateCreated(new Date());
+					newVxFMetadata.setDateUpdated(new Date());
+					newVxFMetadata.setShortDescription(vnfd.getProductName()+"@"+mp.getName());
+					newVxFMetadata.setPackagingFormat(PackagingFormat.OSMvELEVEN);
+					//Get the manoServiceOwner to add it							
+					newVxFMetadata.setOwner(aMANOClient.getPortalUserByUsername("manoService"));
+					
+					// Get VNF Requirements from the vnfd
+					OSM10VNFRequirements vnfreq = new OSM10VNFRequirements(vnfd);
+					// Store the requirements in HTML
+					newVxFMetadata.setDescriptorHTML(vnfreq.toHTML());
+					// Store the YAML file
+					newVxFMetadata.setDescriptor(vnfds_list_entity.getBody());
+					
+					//Add VxFMetadata object to db and get the generated object
+					newVxFMetadata = aMANOClient.addVxFMetadata(newVxFMetadata);
+					logger.info("VxF " + vnfd.getId() + " added with VxFMetadata id="+newVxFMetadata.getId());
+					
+					//Create the OnboardedDescriptor
+					VxFOnBoardedDescriptor newVxFOnBoardedDescriptor = new VxFOnBoardedDescriptor(newVxFMetadata);
+					newVxFOnBoardedDescriptor.setDeployId(vnfd.getId());
+					newVxFOnBoardedDescriptor.setFeedbackMessage("Automatically Retrieved from OSM");
+					newVxFOnBoardedDescriptor.setLastOnboarding(new Date());
+					newVxFOnBoardedDescriptor.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+					newVxFOnBoardedDescriptor.setUuid(vnfd.getId());
+					newVxFOnBoardedDescriptor.setVxfMANOProviderID(vnfd.getProductName());
+					newVxFOnBoardedDescriptor.setObMANOprovider(mp);
+					newVxFOnBoardedDescriptor.setVxf(aMANOClient.getVxFById(newVxFMetadata.getId()));
+					//Add VxFOnBoardedDescriptor object to db and get the generated object
+					newVxFOnBoardedDescriptor=aMANOClient.addVxFOnBoardedDescriptor(newVxFOnBoardedDescriptor);
+					logger.info("VxFOnBoardedDescriptor " + newVxFOnBoardedDescriptor.getId() + " added");
+					
+				}
+			}
+			// Check for orphaned 
+			for(VxFOnBoardedDescriptor dbvxfobd : vxFOnBoardedDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Vnfd vnfd : vnfd_array)
+				{
+					if(dbvxfobd.getDeployId().equals(vnfd.getId()))
+					{
+						logger.info("VNFD " + vnfd.getId() + " exists in osm");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
+					logger.info("synchronizeVNFDsOSM11 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
 		} catch (IllegalStateException | IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -1265,7 +1492,7 @@ public class MANOController {
 			logger.error("NSDs List Get Request failed. Status Code:" + nsds_list_entity.getStatusCode().toString()
 					+ ", Payload:" + nsds_list_entity.getBody().toString());
 		} else {
-			logger.info("Got NSD list "+nsds_list_entity.getBody());
+			logger.debug("Got NSD list "+nsds_list_entity.getBody());
 			logger.info("Got MP Version:"+mp.getSupportedMANOplatform().getVersion());
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvEIGHT"))
 			{					
@@ -1278,6 +1505,10 @@ public class MANOController {
 			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvTEN"))
 			{					
 				synchronizeNSDsOSM10(experimentOnboardDescriptors, nsds_list_entity, mp);
+			}
+			if(mp.getSupportedMANOplatform().getVersion().equals("OSMvELEVEN"))
+			{					
+				synchronizeNSDsOSM11(experimentOnboardDescriptors, nsds_list_entity, mp);
 			}
 		}		
 	}
@@ -1302,7 +1533,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getId()+ " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1313,7 +1544,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1382,6 +1613,29 @@ public class MANOController {
 					
 				}						
 			}					
+			// Check for orphaned 
+			for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptor)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(Nsd nsd : nsd_array)
+				{
+					if(dbexpobd.getDeployId().equals(nsd.getId()))
+					{
+						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM8 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
+					logger.info("synchronizeNSDsOSM8 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}			
 		} catch (IllegalStateException | IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -1408,7 +1662,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getInvariantId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1419,7 +1673,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1490,6 +1744,30 @@ public class MANOController {
 					
 				}						
 			}					
+			// Check for orphaned 
+			for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM9 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
+					logger.info("synchronizeNSDsOSM9 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}			
 		} catch (IllegalStateException | IOException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -1516,7 +1794,7 @@ public class MANOController {
 				}	
 										
 				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
-				logger.info("NSD to JSON:"+jsonInString);
+				logger.debug("NSD to JSON:"+jsonInString);
 				logger.info("NSD " + nsd.getInvariantId() + " added");						
 
 				// Get the mapped ExperimentMetadata object
@@ -1527,7 +1805,7 @@ public class MANOController {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}								
-				logger.info("Prod created:"+jsonInString);	
+				logger.debug("Prod created:"+jsonInString);	
 				
 				// Now that we have the product
 				// Check if the ExperimentMetadata uuid already exists in the database
@@ -1599,15 +1877,175 @@ public class MANOController {
 					//Add VxFOnBoardedDescriptor object to db and get the generated object
 					newExperimentOnBoardedDescriptor=aMANOClient.addExperimentOnBoardedDescriptor(newExperimentOnBoardedDescriptor);
 					logger.info("ExperimentOnBoardedDescriptor " + newExperimentOnBoardedDescriptor.getId() + " added");
-
 				}						
 			}					
+			// Check for orphaned 
+			for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM10 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
+					logger.info("synchronizeNSDsOSM10 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
+			
 		} catch (Exception e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
 		}			
 	}
-	
+
+	private void synchronizeNSDsOSM11(List<ExperimentOnBoardDescriptor> experimentOnBoardDescriptors, ResponseEntity<String> nsds_list_entity, MANOprovider mp)
+	{
+		ObjectMapper mapper = new ObjectMapper();
+		try {
+			// Parse the json list of objects
+			org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[] nsd_array = (org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[]) mapper.readValue(nsds_list_entity.getBody(), org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd[].class);
+			// For each object
+			for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+			{
+				String jsonInString=null;
+				ObjectMapper mapper2 = new ObjectMapper();
+				mapper2.setSerializationInclusion(Include.NON_NULL);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(nsd);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}	
+										
+				// Εδώ θα συγκρίνουμε αυτό που λάβαμε απο τη βάση με αυτό που λάβαμε απο το osm και θα το ανανεώσουμε στη βάση.
+				logger.debug("NSD to JSON:"+jsonInString);
+				logger.info("NSD " + nsd.getInvariantId() + " added");						
+
+				// Get the mapped ExperimentMetadata object
+				ExperimentMetadata prod = mapOSM10NSD2ProductFromJSON(nsd,mp);
+				try {
+					jsonInString = mapper2.writerWithDefaultPrettyPrinter().writeValueAsString(prod);
+				} catch (JsonProcessingException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}								
+				logger.debug("Prod created:"+jsonInString);	
+				
+				// Now that we have the product
+				// Check if the ExperimentMetadata uuid already exists in the database
+				
+				boolean exists_in_db = false;
+				for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+				{
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + nsd.getInvariantId() + " already exists");
+						exists_in_db = true;
+					}
+				}						
+				if(exists_in_db == false)
+				{
+					logger.info("NSD " + nsd.getInvariantId() + " does not exist. Adding to db.");
+					exists_in_db = true;
+					//Map osm vim to db vim object
+					ExperimentMetadata newExperimentMetadata = new ExperimentMetadata();
+					newExperimentMetadata.setUuid(nsd.getInvariantId());
+					// Combine the vnfd name with the OSM name.
+					newExperimentMetadata.setName(nsd.getName());
+					newExperimentMetadata.setValidationStatus(ValidationStatus.COMPLETED);
+					newExperimentMetadata.setDateCreated(new Date());
+					newExperimentMetadata.setDateUpdated(new Date());
+					newExperimentMetadata.setShortDescription(nsd.getName()+"@"+mp.getName());
+					newExperimentMetadata.setPackagingFormat(PackagingFormat.OSMvELEVEN);
+					//Get the manoServiceOwner to add it							
+					newExperimentMetadata.setOwner(aMANOClient.getPortalUserByUsername("manoService"));
+					
+					// Get VNF Requirements from the vnfd
+					OSM10NSRequirements nsdreq = new OSM10NSRequirements(nsd);
+					// Store the requirements in HTML
+					newExperimentMetadata.setDescriptorHTML(nsdreq.toHTML());
+					// Store the YAML file
+					newExperimentMetadata.setDescriptor(nsds_list_entity.getBody());
+					
+					for (Df v : nsd.getDf().values()) {
+						for( VnfProfile q : v.getVnfProfile().values())
+						{
+							ConstituentVxF cvxf = new ConstituentVxF();
+							try {
+								cvxf.setMembervnfIndex(Integer.parseInt(q.getId()));
+								
+							} catch ( NumberFormatException e) {
+								cvxf.setMembervnfIndex( 0 );
+							}
+							cvxf.setVnfdidRef((String) q.getVnfdId());
+							String vxfuuid = aMANOClient.getVxFOnBoardedDescriptorByVxFAndMP(q.getVnfdId(), mp.getId());
+							VxFMetadata vxf = (VxFMetadata) aMANOClient.getVxFByUUid(vxfuuid);
+							cvxf.setVxfref(vxf);
+							((ExperimentMetadata) newExperimentMetadata).getConstituentVxF().add(cvxf);					
+						}
+					}					
+					//Add VxFMetadata object to db and get the generated object
+					newExperimentMetadata = aMANOClient.addExperimentMetadata(newExperimentMetadata);
+					logger.info("Experiment " + nsd.getId() + " added with ExperimentMetadata id="+newExperimentMetadata.getId());
+					
+					//Create the OnboardedDescriptor
+					ExperimentOnBoardDescriptor newExperimentOnBoardedDescriptor = new ExperimentOnBoardDescriptor(newExperimentMetadata);
+					newExperimentOnBoardedDescriptor.setDeployId(nsd.getInvariantId());
+					newExperimentOnBoardedDescriptor.setFeedbackMessage("Automatically Retrieved from OSM");
+					newExperimentOnBoardedDescriptor.setLastOnboarding(new Date());
+					newExperimentOnBoardedDescriptor.setOnBoardingStatus(OnBoardingStatus.ONBOARDED);
+					newExperimentOnBoardedDescriptor.setUuid(nsd.getInvariantId());
+					newExperimentOnBoardedDescriptor.setExperimentMANOProviderID(nsd.getName());
+					newExperimentOnBoardedDescriptor.setObMANOprovider(mp);
+					newExperimentOnBoardedDescriptor.setExperiment(aMANOClient.getNSDById(newExperimentMetadata.getId()));					
+					//Add VxFOnBoardedDescriptor object to db and get the generated object
+					newExperimentOnBoardedDescriptor=aMANOClient.addExperimentOnBoardedDescriptor(newExperimentOnBoardedDescriptor);
+					logger.info("ExperimentOnBoardedDescriptor " + newExperimentOnBoardedDescriptor.getId() + " added");
+				}						
+			}					
+			// Check for orphaned 
+			for(ExperimentOnBoardDescriptor dbexpobd : experimentOnBoardDescriptors)
+			{
+				boolean exists_in_osm = false;
+				// For each object
+				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
+				{
+					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
+					{
+						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
+						exists_in_osm = true;
+					}
+				}
+				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
+				{
+					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
+					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
+					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
+					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " updated OnboardingStatus to OSM_MISSING");
+				}
+			}
+			
+		} catch (Exception e) {
+			logger.error(e.getMessage());
+			e.printStackTrace();
+		}			
+	}
+
 	public VxFMetadata mapOSM8VNFD2ProductFromJSON(Vnfd vnfd) {
 		
 		VxFMetadata prod = new VxFMetadata();
@@ -1779,7 +2217,8 @@ public class MANOController {
 			List<DeploymentDescriptor> runningDeploymentDescriptors = aMANOClient
 					.getRunningInstantiatingAndTerminatingDeployments();
 			for (DeploymentDescriptor nsd : runningDeploymentDescriptors) {
-				logger.debug("NSD name:" + nsd.getName());
+				logger.info("NSD name:" + nsd.getName());
+
 			}
 			OSMClient osmClient = null;			
 			// For each deployment get the status info and the IPs
@@ -1973,7 +2412,7 @@ public class MANOController {
 
 		
 		//Get the VNF instance ids
-		logger.info("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
+		logger.debug("checkAndUpdateRunningDeploymentDescriptors ns instance info "+ns_instance_info);									
 		List<String> constituent_vnfr_refs = JsonPath.read(ns_instance_info.toString(), "$.constituent-vnfr-ref");									
 		Integer q=0;
 		deployment_tmp.getDeploymentDescriptorVxFInstanceInfo().clear();
@@ -1987,10 +2426,8 @@ public class MANOController {
 			} else {
 				try {											
 					logger.info("Updating vxfPlacementInfo");			
-					logger.info("Before setting vnf instance info");
-					logger.info("VNF Instance information " +vnf_instance_info.toString());
-					logger.info("Initial value for place "+q);
-					logger.info("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
+					logger.debug("VNF Instance information " +vnf_instance_info.toString());
+					logger.debug("Initial "+deployment_tmp.getDeploymentDescriptorVxFInstanceInfo());
 					DeploymentDescriptorVxFInstanceInfo tmp = new DeploymentDescriptorVxFInstanceInfo();
 					String member_vnf_index_ref = JsonPath.read(vnf_instance_info.toString(), "$.member-vnf-index-ref");
 					tmp.setMemberVnfIndexRef(member_vnf_index_ref);
@@ -2070,7 +2507,7 @@ public class MANOController {
 				IPinfo.append("]\n");
 			}
 
-			logger.info(IPinfo);
+			logger.debug(IPinfo);
 			return IPinfo.toString();
 
 		} catch (Exception e) {
@@ -2080,10 +2517,10 @@ public class MANOController {
 	}
 
 	private ExperimentOnBoardDescriptor getExperimOBD(DeploymentDescriptor deployment_tmp) {
-		logger.info( "getExperimOBD start");
+		logger.debug( "getExperimOBD start");
 		for (ExperimentOnBoardDescriptor e : deployment_tmp.getExperimentFullDetails()
 				.getExperimentOnBoardDescriptors()) {
-			logger.info( "getExperimOBD:"+ e.toString());
+			logger.debug( "getExperimOBD:"+ e.toString());
 			return e; // return the first one found
 		}
 		return null;
@@ -2148,7 +2585,7 @@ public class MANOController {
 				// NS action starts
 				logger.info("NS action of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 				// Save the changes to DeploymentDescriptor
-				logger.info("NS action Status Code:" + ns_action_entity.getStatusCode().toString() + ", Payload:"
+				logger.debug("NS action Status Code:" + ns_action_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_action_entity.getBody().toString());
 			}
 			// Get the response id or failure
@@ -2222,7 +2659,7 @@ public class MANOController {
 			// NS action starts
 			logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 			// Save the changes to DeploymentDescriptor
-			logger.info("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+			logger.debug("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
 					+ ns_scale_entity.getBody().toString());
 		}
 		// Get the response id or failure
@@ -2280,7 +2717,7 @@ public class MANOController {
 				// NS action starts
 				logger.info("NS scale of NS with id" + deploymentdescriptor.getInstanceId() + " started.");
 				// Save the changes to DeploymentDescriptor
-				logger.info("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
+				logger.debug("NS scale Status Code:" + ns_scale_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_scale_entity.getBody().toString());
 			}
 			// Get the response id or failure
@@ -2305,15 +2742,15 @@ public class MANOController {
 	}
 
 	public void deployNSDToMANOProvider(long deploymentdescriptorid) {
-		logger.info("Starting deployNSDToMANOProvicer");
+		logger.debug("Starting deployNSDToMANOProvicer");
 		DeploymentDescriptor deploymentdescriptor = aMANOClient.getDeploymentByIdEager(deploymentdescriptorid);
-		logger.info("Starting getExperimOBD");
+		logger.debug("Starting getExperimOBD");
 		ExperimentOnBoardDescriptor tmp = deploymentdescriptor.getObddescriptor_uuid();		
-		logger.info("The loaded obddescriptor contains:"+tmp.toJSON());
-		logger.info("Starting connection to osm");
+		logger.debug("The loaded obddescriptor contains:"+tmp.toJSON());
+		logger.debug("Starting connection to osm");
 		OSMClient osmClient = null;
 		try {
-			logger.info("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
+			logger.debug("Connecting to " + tmp.getObMANOprovider().getSupportedMANOplatform().getName()
 					+ " MANO Client of version " + tmp.getObMANOprovider().getSupportedMANOplatform().getVersion()
 					+ ".");
 			osmClient = OSMClientFactory.getOSMClient(tmp.getObMANOprovider().getSupportedMANOplatform().getVersion(),
@@ -2339,19 +2776,19 @@ public class MANOController {
 			// aMANOClient.deploymentInstantiationFailed(deploymentdescriptor);
 			return;
 		}
-		logger.info("Connected to OSM");
+		logger.debug("Connected to OSM");
 		NSCreateInstanceRequestPayload nscreateinstancerequestpayload = null;
 		String nscreateinstancerequestpayload_json = null;
 		if (deploymentdescriptor.getInstantiationconfig() != null) {
 			nscreateinstancerequestpayload_json = deploymentdescriptor.getInstantiationconfig();
-			logger.info("Found and parsed instantiation configuration " + nscreateinstancerequestpayload_json);
+			logger.debug("Found and parsed instantiation configuration " + nscreateinstancerequestpayload_json);
 		} else {
 			logger.info("Could not find or parse instantiation configuration from user. Getting default configuration");
 			nscreateinstancerequestpayload = new NSCreateInstanceRequestPayload(deploymentdescriptor);
 			nscreateinstancerequestpayload_json = nscreateinstancerequestpayload.toJSON();
 		}
 		// Get Experiment ID and VIM ID and create NS Instance.
-		logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
+		logger.debug("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
 		ResponseEntity<String> ns_instance_creation_entity = osmClient
 				.createNSInstance(nscreateinstancerequestpayload_json);
 		// The NS Instance ID is set
@@ -2366,11 +2803,10 @@ public class MANOController {
 			logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus());
 			deploymentdescriptor.setFeedback(ns_instance_creation_entity.getBody().toString());
-			logger.info("Update DeploymentDescriptor Object in 785");
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 					.updateDeploymentDescriptor(deploymentdescriptor);
 			aMANOClient.deploymentInstantiationFailed(deploymentdescriptor_final);
-			logger.info(
+			logger.debug(
 					"NS Instance creation failed with response: " + ns_instance_creation_entity.getBody().toString());
 		} else {
 			// String nsr_id =
@@ -2382,13 +2818,13 @@ public class MANOController {
 			// Instantiate NS Instance
 			// NSInstantiateInstanceRequestPayload nsrequestpayload = new
 			// NSInstantiateInstanceRequestPayload(deploymentdescriptor);
-			// logger.info("NS Instantiation payload : " + nsrequestpayload.toJSON());
+			// logger.debug("NS Instantiation payload : " + nsrequestpayload.toJSON());
 
 			NSInstantiateInstanceRequestPayload nsrequestpayload = null;
 			String nsrequestpayload_json = null;
 			if (deploymentdescriptor.getInstantiationconfig() != null) {
 				nsrequestpayload_json = deploymentdescriptor.getInstantiationconfig();
-				logger.info("Found and parsed instantiation configuration " + nsrequestpayload_json);
+				logger.debug("Found and parsed instantiation configuration " + nsrequestpayload_json);
 			} else {
 				logger.info(
 						"Could not find or parse instantiation configuration from user. Getting default configuration");
@@ -2396,7 +2832,7 @@ public class MANOController {
 				nsrequestpayload_json = nscreateinstancerequestpayload.toJSON();
 			}
 			// Get Experiment ID and VIM ID and create NS Instance.
-			logger.info("NS Instance creation payload : " + nsrequestpayload_json);
+			logger.debug("NS Instance creation payload : " + nsrequestpayload_json);
 
 			// Here we need the feedback
 			// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
@@ -2413,7 +2849,7 @@ public class MANOController {
 				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
-				logger.info("NS Instantiation failed. Status Code:"
+				logger.debug("NS Instantiation failed. Status Code:"
 						+ instantiate_ns_instance_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_instance_creation_entity.getBody().toString());
 				// Save the changes to DeploymentDescriptor
@@ -2466,7 +2902,6 @@ public class MANOController {
 							+ deploymentdescriptor.getStatus());
 					deploymentdescriptor.setFeedback(response.getBody().toString());
 					logger.error("Termination of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
-					logger.info("Update DeploymentDescriptor Object in 877");
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 							.updateDeploymentDescriptor(deploymentdescriptor);
 					logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
@@ -2501,7 +2936,7 @@ public class MANOController {
 		logger.info("Will delete with deploymentdescriptorid : " + deploymentdescriptorid);
 		String aMANOplatform = "";
 		try {
-			logger.info("MANOplatform: " + aMANOplatform);
+			logger.debug("MANOplatform: " + aMANOplatform);
 			aMANOplatform = deploymentdescriptor.getObddescriptor_uuid().getObMANOprovider().getSupportedMANOplatform().getVersion();
 		} catch (Exception e) {
 			aMANOplatform = "UNKNOWN";
@@ -2561,7 +2996,6 @@ public class MANOController {
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(deletion_response.getBody().toString());
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
-				logger.info("Update DeploymentDescriptor Object in 969");
 				DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 						.updateDeploymentDescriptor(deploymentdescriptor);
 				logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
@@ -2938,7 +3372,6 @@ public class MANOController {
 		
 	public void getScaleAlert(String body)
 	{
-		System.out.println("Scaling message received with body");
 		logger.info("Scaling message received with body");
 	}
 	
