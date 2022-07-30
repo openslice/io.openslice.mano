@@ -1779,7 +1779,7 @@ public class MANOController {
 			List<DeploymentDescriptor> runningDeploymentDescriptors = aMANOClient
 					.getRunningInstantiatingAndTerminatingDeployments();
 			for (DeploymentDescriptor nsd : runningDeploymentDescriptors) {
-				System.out.println("NSD name:" + nsd.getName());
+				logger.debug("NSD name:" + nsd.getName());
 			}
 			OSMClient osmClient = null;			
 			// For each deployment get the status info and the IPs
@@ -2034,6 +2034,15 @@ public class MANOController {
 		} else {
 			deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);			
 		}
+		
+		
+		if ( (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) && 
+				!previous_nslcm_details.equals( deployment_tmp.getNs_nslcm_details() ) ) {
+			deployment_tmp.get
+			publish topic event that NSLCM changed
+			
+		}
+		
 		
 	}
 
