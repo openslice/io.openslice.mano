@@ -1299,7 +1299,7 @@ public class MANOClient {
 		
 		String body;
 		try {
-			body = toJsonString( deployment_tmp );
+			body = getDeploymentEagerDataJson( deployment_tmp );
 			logger.info("notifyOnLCMChanged create  body = " + body);
 			Object response = template.requestBody( NFV_CATALOG_NS_LCMCHANGED, body);
 			return response.toString();
