@@ -1,4 +1,4 @@
-FROM adoptopenjdk/openjdk13-openj9:latest
+FROM adoptopenjdk/openjdk15-openj9:latest
 MAINTAINER openslice.io
 RUN mkdir /opt/shareclasses
 RUN mkdir -p /opt/openslice/lib/
