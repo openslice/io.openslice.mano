@@ -863,8 +863,8 @@ public class MANOController {
 				osmClient = OSMClientFactory.getOSMClient(manoVersion, mp.getApiEndpoint(),
 						mp.getUsername(), mp.getPassword(), mp.getProject());
 			} catch (Exception e) {
-				logger.error(manoVersion + " fails authentication");
-				centralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
+				logger.error(manoVersion + " fails authentication. Details: " + mp.getName() + " " + mp.getApiEndpoint() );
+				centralLogger.log(CLevel.ERROR, manoVersion + " fails authentication. Details: " + mp.getName() + " " + mp.getApiEndpoint() , compname);
 				continue;
 			}
 			synchronizeVIMs(osmClient, mp);
@@ -2234,126 +2234,133 @@ public class MANOController {
 						try {
 							osmClient = OSMClientFactory.getOSMClient(manoVersion, sm.getApiEndpoint(),
 									sm.getUsername(), sm.getPassword(), sm.getProject());
-							// MANOStatus.setOsm5CommunicationStatusActive(null);
+
+							
+							
+							JSONObject ns_instance_info = osmClient.getNSInstanceInfo(deployment_tmp.getInstanceId());
+							// JSONObject ns_instance_content_info =
+							// osmClient.getNSInstanceContentInfo(deployment_tmp.getInstanceId());
+							// If the no nsd with the specific id is found, mark the instance as faile to
+							// delete.
+							if (ns_instance_info == null) {
+								deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
+								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+										+ " to " + deployment_tmp.getStatus(), compname);
+								logger.info("NS not found in OSM. Status change of deployment " + deployment_tmp.getName()
+										+ " to " + deployment_tmp.getStatus());
+								deployment_tmp.setFeedback("NS instance not present in OSM. Marking as FAILED_OSM_REMOVED");
+								logger.info("Update DeploymentDescriptor Object in 363");
+								DeploymentDescriptor deploymentdescriptor_final = aMANOClient
+										.updateDeploymentDescriptor(deployment_tmp);
+								logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
+								aMANOClient.deleteInstanceFailed(deploymentdescriptor_final);
+							} else {
+								try {
+									// String nsr_string = JSONObject.quote(ns_instance_info.toString());
+									deployment_tmp.setNsr(ns_instance_info.toString());
+									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+									logger.info("Setting NSR Info:" + deployment_tmp.getNsr());
+									
+									
+									
+									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) {
+
+										updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
+										
+												
+									}
+									logger.info("Setting Operational Status");
+									deployment_tmp.setOperationalStatus(ns_instance_info.getString("operational-status"));
+									deployment_tmp.setConfigStatus(ns_instance_info.getString("config-status"));
+									deployment_tmp.setDetailedStatus(ns_instance_info.getString("detailed-status")
+											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+									logger.info("deployment_tmp before update "+deployment_tmp.toJSON());
+									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+									logger.info("deployment_tmp after update "+deployment_tmp.toJSON());
+
+									
+									// Depending on the current OSM status, change the portal status.
+									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
+											&& deployment_tmp.getOperationalStatus().toLowerCase().equals("running")) {
+										JSONObject ns_nslcm_details = osmClient
+												.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
+										deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());
+										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+										deployment_tmp.setStatus(DeploymentDescriptorStatus.RUNNING);
+										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+												+ deployment_tmp.getStatus());
+										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+												+ " to " + deployment_tmp.getStatus(), compname);
+										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
+												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+
+										deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
+
+										updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
+										
+//										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+//										aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
+									}
+									// deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING &&
+									if (deployment_tmp.getOperationalStatus().toLowerCase().equals("terminated")) {
+										// This message changes in OSM5 from "terminating" to "terminated"
+										// && deployment_tmp.getConfigStatus().toLowerCase().equals("terminated")
+										// && deployment_tmp.getDetailedStatus().toLowerCase().equals("done")) {
+										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
+												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+										deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATED);
+										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+												+ " to " + deployment_tmp.getStatus(), compname);
+										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+												+ deployment_tmp.getStatus());
+										deployment_tmp.setConstituentVnfrIps("N/A");
+										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+										aMANOClient.deploymentTerminationSucceded(deployment_tmp);
+									}
+									// if(deployment_tmp.getStatus() != DeploymentDescriptorStatus.FAILED &&
+									// deployment_tmp.getOperationalStatus().equals("failed"))
+									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
+											&& deployment_tmp.getOperationalStatus().equals("failed")) {
+										deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED);
+										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+												+ " to " + deployment_tmp.getStatus(), compname);
+										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+												+ deployment_tmp.getStatus());
+										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
+												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+										deployment_tmp.setConstituentVnfrIps("N/A");
+										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+										aMANOClient.deploymentInstantiationFailed(deployment_tmp);
+									}
+									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING
+											&& deployment_tmp.getOperationalStatus().equals("failed")) {
+										deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
+										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+												+ " to " + deployment_tmp.getStatus(), compname);
+										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+												+ deployment_tmp.getStatus());
+										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
+												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
+										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
+										aMANOClient.deploymentTerminationFailed(deployment_tmp);
+									}
+									logger.info("NS status change is now " + deployment_tmp.getStatus());
+								} catch (JSONException e) {
+									logger.error("Status update failed with error:" + e.getMessage());
+								}
+							}
+							
 						} catch (Exception e) {
 							logger.error(manoVersion + " fails authentication");
 							centralLogger.log(CLevel.ERROR, manoVersion + " fails authentication", compname);
-							// MANOStatus.setOsm5CommunicationStatusFailed(null);
-							return;
+
+							//return;
 						}
 					}
-					JSONObject ns_instance_info = osmClient.getNSInstanceInfo(deployment_tmp.getInstanceId());
-					// JSONObject ns_instance_content_info =
-					// osmClient.getNSInstanceContentInfo(deployment_tmp.getInstanceId());
-					// If the no nsd with the specific id is found, mark the instance as faile to
-					// delete.
-					if (ns_instance_info == null) {
-						deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-						centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
-								+ " to " + deployment_tmp.getStatus(), compname);
-						logger.info("NS not found in OSM. Status change of deployment " + deployment_tmp.getName()
-								+ " to " + deployment_tmp.getStatus());
-						deployment_tmp.setFeedback("NS instance not present in OSM. Marking as FAILED_OSM_REMOVED");
-						logger.info("Update DeploymentDescriptor Object in 363");
-						DeploymentDescriptor deploymentdescriptor_final = aMANOClient
-								.updateDeploymentDescriptor(deployment_tmp);
-						logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
-						aMANOClient.deleteInstanceFailed(deploymentdescriptor_final);
-					} else {
-						try {
-							// String nsr_string = JSONObject.quote(ns_instance_info.toString());
-							deployment_tmp.setNsr(ns_instance_info.toString());
-							deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-							logger.info("Setting NSR Info:" + deployment_tmp.getNsr());
-							
-							
-							
-							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.RUNNING) {
-
-								updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
-								
-										
-							}
-							logger.info("Setting Operational Status");
-							deployment_tmp.setOperationalStatus(ns_instance_info.getString("operational-status"));
-							deployment_tmp.setConfigStatus(ns_instance_info.getString("config-status"));
-							deployment_tmp.setDetailedStatus(ns_instance_info.getString("detailed-status")
-									.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-							logger.info("deployment_tmp before update "+deployment_tmp.toJSON());
-							deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-							logger.info("deployment_tmp after update "+deployment_tmp.toJSON());
-
-							
-							// Depending on the current OSM status, change the portal status.
-							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
-									&& deployment_tmp.getOperationalStatus().toLowerCase().equals("running")) {
-								JSONObject ns_nslcm_details = osmClient
-										.getNSLCMDetails(deployment_tmp.getNsLcmOpOccId());
-								deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-								deployment_tmp.setStatus(DeploymentDescriptorStatus.RUNNING);
-								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
-										+ deployment_tmp.getStatus());
-								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
-										+ " to " + deployment_tmp.getStatus(), compname);
-								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
-										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-
-								deployment_tmp.setConstituentVnfrIps( extractIPsFromNSR(ns_instance_info) );
-
-								updateDescriptorInRunningState( deployment_tmp, osmClient, ns_instance_info );
-								
-//								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-//								aMANOClient.deploymentInstantiationSucceded(deployment_tmp);
-							}
-							// deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING &&
-							if (deployment_tmp.getOperationalStatus().toLowerCase().equals("terminated")) {
-								// This message changes in OSM5 from "terminating" to "terminated"
-								// && deployment_tmp.getConfigStatus().toLowerCase().equals("terminated")
-								// && deployment_tmp.getDetailedStatus().toLowerCase().equals("done")) {
-								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
-										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-								deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATED);
-								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
-										+ " to " + deployment_tmp.getStatus(), compname);
-								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
-										+ deployment_tmp.getStatus());
-								deployment_tmp.setConstituentVnfrIps("N/A");
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-								aMANOClient.deploymentTerminationSucceded(deployment_tmp);
-							}
-							// if(deployment_tmp.getStatus() != DeploymentDescriptorStatus.FAILED &&
-							// deployment_tmp.getOperationalStatus().equals("failed"))
-							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
-									&& deployment_tmp.getOperationalStatus().equals("failed")) {
-								deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED);
-								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
-										+ " to " + deployment_tmp.getStatus(), compname);
-								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
-										+ deployment_tmp.getStatus());
-								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
-										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-								deployment_tmp.setConstituentVnfrIps("N/A");
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-								aMANOClient.deploymentInstantiationFailed(deployment_tmp);
-							}
-							if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING
-									&& deployment_tmp.getOperationalStatus().equals("failed")) {
-								deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
-								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
-										+ " to " + deployment_tmp.getStatus(), compname);
-								logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
-										+ deployment_tmp.getStatus());
-								deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
-										.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-								deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-								aMANOClient.deploymentTerminationFailed(deployment_tmp);
-							}
-							logger.info("NS status change is now " + deployment_tmp.getStatus());
-						} catch (JSONException e) {
-							logger.error("Status update failed with error:" + e.getMessage());
-						}
-					}
+					
+					
+					
+					
 				} catch (Exception e) {
 					logger.error("Check and update process failed with error:" + e.getMessage());
 				}
