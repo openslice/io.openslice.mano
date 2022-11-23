@@ -2228,9 +2228,15 @@ public class MANOController {
 				//deployment_tmp.getExperimentFullDetails();
 				try {
 					// Get the MANO Provider for each deployment
+					logger.debug("MANOprovider sm deployment_tmp.getObddescriptor_uuid() = " + deployment_tmp.getObddescriptor_uuid() );
+					logger.debug("MANOprovider sm deployment_tmp.getObddescriptor_uuid().toString() = " + deployment_tmp.getObddescriptor_uuid().toString() );
 					MANOprovider sm = deployment_tmp.getObddescriptor_uuid().getObMANOprovider() ;
+
+					logger.debug("manoVersion sm.getSupportedMANOplatform() = " + sm.getSupportedMANOplatform() );
+					logger.debug("manoVersion sm.getSupportedMANOplatform().getVersion() = " + sm.getSupportedMANOplatform().getVersion() );
 					String manoVersion = sm.getSupportedMANOplatform().getVersion();
-					if (osmClient == null || !osmClient.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
+					
+					//if (osmClient == null || !osmClient.getMANOApiEndpoint().equals(sm.getApiEndpoint())) {
 						try {
 							osmClient = OSMClientFactory.getOSMClient(manoVersion, sm.getApiEndpoint(),
 									sm.getUsername(), sm.getPassword(), sm.getProject());
@@ -2356,7 +2362,7 @@ public class MANOController {
 
 							//return;
 						}
-					}
+					//}//end if
 					
 					
 					
