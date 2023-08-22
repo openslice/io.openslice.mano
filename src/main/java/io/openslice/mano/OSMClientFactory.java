@@ -63,11 +63,7 @@ public class OSMClientFactory {
 	public static Boolean isOSMVersionSupported(String type)
 	{
 		switch(type)
-		{
-			case "OSMvEIGHT":
-				return true;				
-			case "OSMvNINE":
-				return true;				
+		{	
 			case "OSMvTEN":
 				return true;				
 			case "OSMvELEVEN":
