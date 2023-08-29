@@ -12,13 +12,14 @@ server:
 
 logging:
   level:
+    root: INFO
     org.springframework.cloud.consul: INFO
     org.apache.camel.zipkin: INFO
     org.apache.camel.spring.cloud: INFO
     org.apache.camel: INFO
   file: logs/application-debug.log
   pattern:
-    console: "%d %-5level %logger : %msg%n"
+    console: "%d %-5level %logger %M %L:  %msg%n"
     file: "%d %-5level [%thread] %logger : %msg%n"
         
 # Camel Service Call
@@ -55,7 +56,7 @@ spring:
         healthCheckInterval: 120s
       
   activemq:
-    brokerUrl: tcp://localhost:6616
+    brokerUrl: tcp://localhost:61616
     user: admin
     password: admin
     pool:

@@ -95,7 +95,7 @@ public class NSInstantiateInstanceRequestPayload {
 		Integer count = 1;
 		for (DeploymentDescriptorVxFPlacement tmp : deploymentdescriptor.getVxfPlacements()) {
 			VnF vnf_tmp = new VnF();
-			vnf_tmp.memberVnFIndex = count.toString();
+			vnf_tmp.memberVnFIndex = tmp.getConstituentVxF().getMembervnfIndex();
 			vnf_tmp.vimAccount = tmp.getInfrastructure().getVIMid();
 			this.vnf.add(vnf_tmp);			
 			count++;

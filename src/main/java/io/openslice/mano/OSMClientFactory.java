@@ -51,6 +51,8 @@ public class OSMClientFactory {
 				return new OSM10Client(apiEndpoint,username,password,project_id);
 			case "OSMvELEVEN":
 				return new OSM10Client(apiEndpoint,username,password,project_id);
+			case "OSMvTHIRTEEN":
+				return new OSM10Client(apiEndpoint,username,password,project_id);
 			case "GenericSOL005":
 				return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
 		}
@@ -69,6 +71,8 @@ public class OSMClientFactory {
 			return new OSM10NSExtractor(NSDescriptorFile);
 		case "OSMvELEVEN":
 			return new OSM10NSExtractor(NSDescriptorFile);
+		case "OSMvTHIRTEEN":
+			return new OSM10NSExtractor(NSDescriptorFile);
 		}
 		return new OSM9NSExtractor(NSDescriptorFile);
 	}
@@ -84,6 +88,8 @@ public class OSMClientFactory {
 			case "OSMvTEN":
 				return true;				
 			case "OSMvELEVEN":
+				return true;				
+			case "OSMvTHIRTEEN":
 				return true;				
 		}
 		return false;
