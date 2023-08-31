@@ -23,8 +23,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
-import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.context.annotation.ComponentScan;
 
 
@@ -38,10 +36,8 @@ import org.springframework.context.annotation.ComponentScan;
 // This is equivalent to @Configuration, @EnableAutoConfiguration, and @ComponentScan
 @SpringBootApplication
 // This annotation is used for consul
-@EnableDiscoveryClient
 //@EnableRetry
 // This is from spring-cloud to allow local configuration application
-@RefreshScope
 // @EnableAutoConfiguration annotation tells Spring Boot to "guess" how you will want to configure Spring, 
 // based on the jar dependencies that you have added. For example, If HSQLDB is on your classpath, and you 
 // have not manually configured any database connection beans, then Spring will auto-configure an in-memory database. 
