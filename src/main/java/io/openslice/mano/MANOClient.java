@@ -433,21 +433,19 @@ public class MANOClient {
 	public DeploymentDescriptor getDeploymentByIdEager(long Id) {
 		String ret = template.requestBody("activemq:queue:getDeploymentByIdEager", Id, String.class);
 		logger.debug("Message Received from AMQ on activemq:queue:getDeploymentByIdEager("+Id+") call:" + ret);		
-		// FluentProducerTemplate template = contxt.create
-		// .createFluentProducerTemplate().to("activemq:queue:getRunningInstantiatingAndTerminatingDeployments?multipleConsumers=true");
 		DeploymentDescriptor dd = null;
 		// Map object to DeploymentDescriptor
 		try {
 			ObjectMapper mapper = new ObjectMapper();
 			logger.debug("From ActiveMQ:" + ret.toString());
+			// Here we need to deserialize the DTO and not DeploymentDescriptor object.
 			dd = mapper.readValue(ret, DeploymentDescriptor.class);
+			// Load the DeploymentDescriptor ExperimentMetadata
 			if (dd.getExperiment() != null) {
-				//dd.setExperiment(this.getExperimentById(dd.getExperiment().getId()));
-				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));	
-				
+				// Use the experiment id to load the NSD by the id and load the experiment. 
+				dd.setExperiment(this.getNSDById(dd.getExperiment().getId()));					
 				logger.info("getDeploymentByIdEager: The experiment of the deployment is " + dd.getExperiment().getId());
 			}
-			dd.getObddescriptor_uuid();
 		} catch (JsonParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

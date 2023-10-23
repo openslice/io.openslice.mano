@@ -21,11 +21,8 @@
 package io.openslice.mano;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -34,9 +31,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.nsd.Df;
 import org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.nsd.df.VnfProfile;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.nsd.constituent.vnfd.ConstituentVnfd;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.project.nsd.rev170228.project.nsd.catalog.Nsd;
-import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.base.rev170228.vnfd.descriptor.Vdu;
 import org.opendaylight.yang.gen.v1.urn.etsi.osm.yang.vnfd.rev170228.vnfd.catalog.Vnfd;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +53,6 @@ import io.openslice.model.ConstituentVxF;
 import io.openslice.model.DeploymentDescriptor;
 import io.openslice.model.DeploymentDescriptorStatus;
 import io.openslice.model.DeploymentDescriptorVxFInstanceInfo;
-import io.openslice.model.DeploymentDescriptorVxFPlacement;
 import io.openslice.model.ExperimentMetadata;
 import io.openslice.model.ExperimentOnBoardDescriptor;
 import io.openslice.model.Infrastructure;
@@ -74,9 +67,9 @@ import io.openslice.model.VxFMetadata;
 import io.openslice.model.VxFOnBoardedDescriptor;
 import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.ΑNSActionRequestPayload;
+import jakarta.transaction.Transactional;
 import io.openslice.sol005nbi.ANSScaleRequestPayload;
 import io.openslice.centrallog.client.*;
-import io.openslice.mano.NSInstantiateInstanceRequestPayload.VnF;
 
 import OSM10Util.OSM10ArchiveExtractor.OSM10NSExtractor;
 import OSM10Util.OSM10ArchiveExtractor.OSM10VNFDExtractor;
@@ -837,7 +830,8 @@ public class MANOController {
 	{
 		logger.info("Scale Alert Body "+Body);
 	}	
-
+	
+	@Transactional
 	public void checkAndUpdateMANOProvidersResources() {
 
 		// Get MANO Providers
@@ -1507,7 +1501,7 @@ public class MANOController {
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
 				{
-					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					logger.debug("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
 					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
@@ -1643,7 +1637,7 @@ public class MANOController {
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
 				{
-					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					logger.debug("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
 					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
@@ -1778,7 +1772,7 @@ public class MANOController {
 				// For each object
 				for(org.opendaylight.yang.gen.v1.urn.etsi.nfv.yang.etsi.nfv.descriptors.rev190425.Nsd nsd : nsd_array)
 				{
-					logger.info("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
+					logger.debug("getDeployId()= " + dbexpobd.getDeployId() + "?=nsd.getInvariantId()" +nsd.getInvariantId());
 					if(dbexpobd.getDeployId().equals(nsd.getInvariantId()))
 					{
 						logger.info("NSD " + dbexpobd.getDeployId() + " already exists");
@@ -1901,6 +1895,7 @@ public class MANOController {
 		}
 	}	
 	
+	@Transactional
 	public void checkAndUpdateRunningDeploymentDescriptors() {	
 		checkAndUpdateMANOProvidersResources();
 		logger.info("Update Deployment Descriptors");
@@ -1943,9 +1938,9 @@ public class MANOController {
 							// delete.
 							if (ns_instance_info == null) {
 								deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-								centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+								centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus(), compname);
-								logger.info("NS not found in OSM. Status change of deployment " + deployment_tmp.getName()
+								logger.info("NS not found in OSM. Status change of deployment1 " + deployment_tmp.getName()
 										+ " to " + deployment_tmp.getStatus());
 								deployment_tmp.setFeedback("NS instance not present in OSM. Marking as FAILED_OSM_REMOVED");
 								logger.info("Update DeploymentDescriptor Object in 363");
@@ -1986,9 +1981,9 @@ public class MANOController {
 										deployment_tmp.setNs_nslcm_details(ns_nslcm_details.toString());
 										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
 										deployment_tmp.setStatus(DeploymentDescriptorStatus.RUNNING);
-										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+										logger.info("Status change of deployment1 " + deployment_tmp.getName() + " to "
 												+ deployment_tmp.getStatus());
-										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+										centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deployment_tmp.getName()
 												+ " to " + deployment_tmp.getStatus(), compname);
 										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -2008,9 +2003,9 @@ public class MANOController {
 										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
 										deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATED);
-										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+										centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deployment_tmp.getName()
 												+ " to " + deployment_tmp.getStatus(), compname);
-										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+										logger.info("Status change of deployment1 " + deployment_tmp.getName() + " to "
 												+ deployment_tmp.getStatus());
 										deployment_tmp.setConstituentVnfrIps("N/A");
 										deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
@@ -2021,9 +2016,9 @@ public class MANOController {
 									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.INSTANTIATING
 											&& deployment_tmp.getOperationalStatus().equals("failed")) {
 										deployment_tmp.setStatus(DeploymentDescriptorStatus.FAILED);
-										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+										centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deployment_tmp.getName()
 												+ " to " + deployment_tmp.getStatus(), compname);
-										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+										logger.info("Status change of deployment1 " + deployment_tmp.getName() + " to "
 												+ deployment_tmp.getStatus());
 										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -2034,9 +2029,9 @@ public class MANOController {
 									if (deployment_tmp.getStatus() == DeploymentDescriptorStatus.TERMINATING
 											&& deployment_tmp.getOperationalStatus().equals("failed")) {
 										deployment_tmp.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
-										centralLogger.log(CLevel.INFO, "Status change of deployment " + deployment_tmp.getName()
+										centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deployment_tmp.getName()
 												+ " to " + deployment_tmp.getStatus(), compname);
-										logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+										logger.info("Status change of deployment1 " + deployment_tmp.getName() + " to "
 												+ deployment_tmp.getStatus());
 										deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 												.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -2157,9 +2152,9 @@ public class MANOController {
 						.equals(ns_instance_info.getString("detailed-status")
 								.replaceAll("\\n", " ").replaceAll("\'", "'")
 								.replaceAll("\\\\", ""))) {
-			logger.info("Status change of deployment " + deployment_tmp.getName() + " to "
+			logger.info("Status change of deployment1 " + deployment_tmp.getName() + " to "
 					+ deployment_tmp.getStatus());
-			centralLogger.log(CLevel.INFO, "Status change of deployment "
+			centralLogger.log(CLevel.INFO, "Status change of deployment1 "
 					+ deployment_tmp.getName() + " to " + deployment_tmp.getStatus(), compname);
 			deployment_tmp.setFeedback(ns_instance_info.getString("detailed-status")
 					.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
@@ -2506,9 +2501,9 @@ public class MANOController {
 				|| ns_instance_creation_entity.getStatusCode().is5xxServerError()) {
 			// NS instance creation failed
 			deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
-			centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+			centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus(), compname);
-			logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+			logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 					+ deploymentdescriptor.getStatus());
 			deploymentdescriptor.setFeedback(ns_instance_creation_entity.getBody().toString());
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient
@@ -2552,9 +2547,9 @@ public class MANOController {
 					|| instantiate_ns_instance_entity.getStatusCode().is5xxServerError()) {
 				// NS Instantiation failed
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED);
-				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
-				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+				logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
 				logger.debug("NS Instantiation failed. Status Code:"
@@ -2570,9 +2565,9 @@ public class MANOController {
 						instantiate_ns_instance_entity.getBody());
 				deploymentdescriptor.setNsLcmOpOccId(instantiate_ns_instance_entity_json_obj.getString("id"));
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.INSTANTIATING);
-				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
-				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+				logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
 				logger.info("NS Instantiation of NS with id" + nsd_instance_id + " started.");
@@ -2604,9 +2599,9 @@ public class MANOController {
 				if (response == null || response.getStatusCode().is4xxClientError()
 						|| response.getStatusCode().is5xxServerError()) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.TERMINATION_FAILED);
-					centralLogger.log(CLevel.ERROR, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.ERROR, "Status change of deployment1 " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
-					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+					logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
 					deploymentdescriptor.setFeedback(response.getBody().toString());
 					logger.error("Termination of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
@@ -2617,9 +2612,9 @@ public class MANOController {
 				} else {
 					// NS Termination succeeded
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.TERMINATING);
-					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
-					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+					logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
 					deploymentdescriptor.setConstituentVnfrIps("N/A");
 					logger.info("Termination of NS " + deploymentdescriptor.getInstanceId() + " with name "
@@ -2698,9 +2693,9 @@ public class MANOController {
 			if (deletion_response.getStatusCode().is4xxClientError()
 					|| deletion_response.getStatusCode().is5xxServerError()) {
 				deploymentdescriptor.setStatus(DeploymentDescriptorStatus.DELETION_FAILED);
-				centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName() + " to "
+				centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus(), compname);
-				logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+				logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(deletion_response.getBody().toString());
 				logger.error("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " failed");
@@ -2711,9 +2706,9 @@ public class MANOController {
 			} else if (deletion_response.getStatusCode().is2xxSuccessful()) {
 				if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATED) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.COMPLETED);
-					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
-					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+					logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
 					logger.info("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " succeded");
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
@@ -2724,9 +2719,9 @@ public class MANOController {
 				if (deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.FAILED
 						|| deploymentdescriptor.getStatus() == DeploymentDescriptorStatus.TERMINATION_FAILED) {
 					deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-					centralLogger.log(CLevel.INFO, "Status change of deployment " + deploymentdescriptor.getName()
+					centralLogger.log(CLevel.INFO, "Status change of deployment1 " + deploymentdescriptor.getName()
 							+ " to " + deploymentdescriptor.getStatus(), compname);
-					logger.info("Status change of deployment " + deploymentdescriptor.getName() + " to "
+					logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
 					logger.info("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " succeded");
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
@@ -2737,11 +2732,11 @@ public class MANOController {
 			} else {
 				try {
 					centralLogger.log(CLevel.ERROR,
-							"Status change of deployment " + deploymentdescriptor.getName() + " to "
+							"Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 									+ deploymentdescriptor.getStatus() + " replied with false code "
 									+ deletion_response.getStatusCodeValue() + "and body" + deletion_response.getBody(),
 							compname);
-					logger.error("Status change of deployment " + deploymentdescriptor.getName() + " to "
+					logger.error("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus() + " replied with false code "
 							+ deletion_response.getStatusCodeValue() + "and body" + deletion_response.getBody());
 				} catch (Exception e) {
@@ -2754,7 +2749,7 @@ public class MANOController {
 			logger.info(
 					"Descriptor targets an older not supported OSM deploymentdescriptorid: " + deploymentdescriptorid);
 			deploymentdescriptor.setStatus(DeploymentDescriptorStatus.FAILED_OSM_REMOVED);
-			logger.info("Status change of deployment " + deploymentdescriptor.getId() + ", "
+			logger.info("Status change of deployment1 " + deploymentdescriptor.getId() + ", "
 					+ deploymentdescriptor.getName() + " to " + deploymentdescriptor.getStatus());
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 					.updateDeploymentDescriptor(deploymentdescriptor);
