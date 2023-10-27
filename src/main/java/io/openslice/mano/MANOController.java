@@ -2535,7 +2535,7 @@ public class MANOController {
 				nsrequestpayload_json = nscreateinstancerequestpayload.toJSON();
 			}
 			// Get Experiment ID and VIM ID and create NS Instance.
-			logger.info("NS Instance creation payload : " + nsrequestpayload_json);
+			logger.debug("NS Instance creation payload : " + nsrequestpayload_json);
 
 			// Here we need the feedback
 			// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
@@ -2723,7 +2723,7 @@ public class MANOController {
 							+ " to " + deploymentdescriptor.getStatus(), compname);
 					logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 							+ deploymentdescriptor.getStatus());
-					logger.info("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " succeded");
+					logger.info("Deletion of NS instance " + deploymentdescriptor.getInstanceId() + " succeeded");
 					DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 							.updateDeploymentDescriptor(deploymentdescriptor);
 					logger.info("NS status change is now " + deploymentdescriptor_final.getStatus());
