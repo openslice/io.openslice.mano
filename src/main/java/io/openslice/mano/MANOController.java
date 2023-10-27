@@ -951,7 +951,7 @@ public class MANOController {
 				{
 					if(exists_in_osm == false && infrastructure.getMp().getName().equals(mp.getName()) && infrastructure.getMp().getProject().equals(mp.getProject()))
 					{
-						logger.info("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
+						logger.debug("VIM with id "+ infrastructure.getVIMid()+" does not exist and MP name '"+infrastructure.getMp().getName()+"'='"+mp.getName()+"' and project '"+infrastructure.getMp().getProject()+"'='"+mp.getProject()+"'");
 						exists_in_osm = false;
 						infrastructure.setInfrastructureStatus(InfrastructureStatus.OSM_MISSING);
 						infrastructure = aMANOClient.updateInfrastructure(infrastructure);
@@ -1108,10 +1108,10 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				logger.debug(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
 				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
 					logger.info("synchronizeVNFDsOSM10 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
@@ -1227,7 +1227,7 @@ public class MANOController {
 				}
 				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
 					logger.info("synchronizeVNFDsOSM11 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
@@ -1343,7 +1343,7 @@ public class MANOController {
 				}
 				if(exists_in_osm == false && dbvxfobd.getObMANOprovider().getName().equals(mp.getName()) && dbvxfobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbvxfobd.getDeployId()+" does not exist and MP name '"+dbvxfobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbvxfobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					dbvxfobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbvxfobd = aMANOClient.updateVxFOnBoardedDescriptor(dbvxfobd);
 					logger.info("synchronizeVNFDsOSM11 : VxFOnBoardedDescriptor " + dbvxfobd.getId() + " updated OnboardingStatus to OSM_MISSING");
@@ -1508,10 +1508,10 @@ public class MANOController {
 						exists_in_osm = true;
 					}
 				}
-				logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
+				logger.debug(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'?");
 				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					logger.info("synchronizeNSDsOSM10 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
 					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
@@ -1646,7 +1646,7 @@ public class MANOController {
 				}
 				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
 					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
@@ -1781,7 +1781,7 @@ public class MANOController {
 				}
 				if(exists_in_osm == false && dbexpobd.getObMANOprovider().getName().equals(mp.getName()) && dbexpobd.getObMANOprovider().getProject().equals(mp.getProject()))
 				{
-					logger.info(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
+					logger.debug(dbexpobd.getDeployId()+" does not exist and MP name '"+dbexpobd.getObMANOprovider().getName()+"'='"+mp.getName()+"' and project '"+dbexpobd.getObMANOprovider().getProject()+"'='"+mp.getProject()+"'");
 					logger.info("synchronizeNSDsOSM11 : ExperimentOnBoardedDescriptor " + dbexpobd.getId() + " not found. Updating OnboardingStatus to OSM_MISSING");
 					dbexpobd.setOnBoardingStatus(OnBoardingStatus.OSM_MISSING);
 					dbexpobd = aMANOClient.updateExperimentOnBoardDescriptor(dbexpobd);
