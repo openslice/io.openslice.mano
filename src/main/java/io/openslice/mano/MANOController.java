@@ -2491,7 +2491,7 @@ public class MANOController {
 			nscreateinstancerequestpayload_json = nscreateinstancerequestpayload.toJSON();
 		}
 		// Get Experiment ID and VIM ID and create NS Instance.
-		logger.debug("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
+		logger.info("NS Instance creation payload : " + nscreateinstancerequestpayload_json);
 		ResponseEntity<String> ns_instance_creation_entity = osmClient
 				.createNSInstance(nscreateinstancerequestpayload_json);
 		// The NS Instance ID is set
@@ -2509,7 +2509,7 @@ public class MANOController {
 			DeploymentDescriptor deploymentdescriptor_final = aMANOClient
 					.updateDeploymentDescriptor(deploymentdescriptor);
 			aMANOClient.deploymentInstantiationFailed(deploymentdescriptor_final);
-			logger.debug(
+			logger.error(
 					"NS Instance creation failed with response: " + ns_instance_creation_entity.getBody().toString());
 		} else {
 			// String nsr_id =
@@ -2535,7 +2535,7 @@ public class MANOController {
 				nsrequestpayload_json = nscreateinstancerequestpayload.toJSON();
 			}
 			// Get Experiment ID and VIM ID and create NS Instance.
-			logger.debug("NS Instance creation payload : " + nsrequestpayload_json);
+			logger.info("NS Instance creation payload : " + nsrequestpayload_json);
 
 			// Here we need the feedback
 			// String nsr_id = osm5Client.instantiateNSInstance(nsd_instance_id,
@@ -2552,7 +2552,7 @@ public class MANOController {
 				logger.info("Status change of deployment1 " + deploymentdescriptor.getName() + " to "
 						+ deploymentdescriptor.getStatus());
 				deploymentdescriptor.setFeedback(instantiate_ns_instance_entity.getBody().toString());
-				logger.debug("NS Instantiation failed. Status Code:"
+				logger.error("NS Instantiation failed. Status Code:"
 						+ instantiate_ns_instance_entity.getStatusCode().toString() + ", Payload:"
 						+ ns_instance_creation_entity.getBody().toString());
 				// Save the changes to DeploymentDescriptor
