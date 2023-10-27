@@ -1968,9 +1968,9 @@ public class MANOController {
 									deployment_tmp.setConfigStatus(ns_instance_info.getString("config-status"));
 									deployment_tmp.setDetailedStatus(ns_instance_info.getString("detailed-status")
 											.replaceAll("\\n", " ").replaceAll("\'", "'").replaceAll("\\\\", ""));
-									logger.info("deployment_tmp before update "+deployment_tmp.toJSON());
+									logger.debug("deployment_tmp before update "+deployment_tmp.toJSON());
 									deployment_tmp = aMANOClient.updateDeploymentDescriptor(deployment_tmp);
-									logger.info("deployment_tmp after update "+deployment_tmp.toJSON());
+									logger.debug("deployment_tmp after update "+deployment_tmp.toJSON());
 
 									
 									// Depending on the current OSM status, change the portal status.
