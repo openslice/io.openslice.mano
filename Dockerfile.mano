@@ -1,6 +1,6 @@
-FROM adoptopenjdk/openjdk13-openj9:latest
+FROM ibm-semeru-runtimes:open-17.0.7_7-jdk
 MAINTAINER openslice.io
 RUN mkdir /opt/shareclasses
 RUN mkdir -p /opt/openslice/lib/
-COPY target/io.openslice.manoclient-1.1.0-SNAPSHOT.jar /opt/openslice/lib/
-CMD ["java", "-Xshareclasses:cacheDir=/opt/shareclasses","-jar", "/opt/openslice/lib/io.openslice.manoclient-1.1.0-SNAPSHOT.jar"]
+COPY target/io.openslice.manoclient-1.2.0-SNAPSHOT.jar /opt/openslice/lib/
+CMD ["java", "-Xshareclasses:cacheDir=/opt/shareclasses","-jar", "/opt/openslice/lib/io.openslice.manoclient-1.2.0-SNAPSHOT.jar"]

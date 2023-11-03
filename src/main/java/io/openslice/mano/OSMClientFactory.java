@@ -25,13 +25,8 @@ import org.springframework.web.client.HttpStatusCodeException;
 
 import OSM10NBIClient.OSM10Client;
 import OSM10Util.OSM10ArchiveExtractor.OSM10NSExtractor;
-import OSM8NBIClient.OSM8Client;
-import OSM9NBIClient.OSM9Client;
-import OSM8Util.OSM8ArchiveExtractor.OSM8NSExtractor;
-import OSM9Util.OSM9ArchiveExtractor.OSM9NSExtractor;
 import io.openslice.sol005nbi.OSMClient;
 import io.openslice.sol005nbi.OSMUtil.OSMNSExtractor;
-import io.openslice.sol005nbi.etsi.GenericSOL005Client;
 
 @Configuration
 public class OSMClientFactory {
@@ -43,41 +38,40 @@ public class OSMClientFactory {
 		
 		switch(type)
 		{
-			case "OSMvEIGHT":
-				return new OSM8Client(apiEndpoint,username,password,project_id);
-			case "OSMvNINE":
-				return new OSM9Client(apiEndpoint,username,password,project_id);
+			
 			case "OSMvTEN":
 				return new OSM10Client(apiEndpoint,username,password,project_id);
-			case "GenericSOL005":
-				return new GenericSOL005Client(apiEndpoint,username,password,project_id, tokenEndpoint, basePath);
+			case "OSMvELEVEN":
+				return new OSM10Client(apiEndpoint,username,password,project_id);
+
 		}
-		return new OSM9Client(apiEndpoint,username,password,project_id);
+		return new OSM10Client(apiEndpoint,username,password,project_id);
 	}
 	
 	public static OSMNSExtractor getOSMNSExtractor(String type,File NSDescriptorFile)
 	{
 		switch(type)
 		{
-		case "OSMvEIGHT":
-			return new OSM8NSExtractor(NSDescriptorFile);
-		case "OSMvNINE":
-			return new OSM9NSExtractor(NSDescriptorFile);
+		
 		case "OSMvTEN":
 			return new OSM10NSExtractor(NSDescriptorFile);
+		case "OSMvELEVEN":
+			return new OSM10NSExtractor(NSDescriptorFile);
+		case "OSMvTHIRTEEN":
+			return new OSM10NSExtractor(NSDescriptorFile);
 		}
-		return new OSM9NSExtractor(NSDescriptorFile);
+		return new OSM10NSExtractor(NSDescriptorFile);
 	}
 		
 	public static Boolean isOSMVersionSupported(String type)
 	{
 		switch(type)
-		{
-			case "OSMvEIGHT":
-				return true;				
-			case "OSMvNINE":
-				return true;				
+		{	
 			case "OSMvTEN":
+				return true;				
+			case "OSMvELEVEN":
+				return true;				
+			case "OSMvTHIRTEEN":
 				return true;				
 		}
 		return false;

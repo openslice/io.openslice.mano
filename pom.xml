@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>io.openslice</groupId>
 		<artifactId>io.openslice.main</artifactId>
-		<version>1.1.0-SNAPSHOT</version>
+		<version>1.2.0-SNAPSHOT</version>
 		<relativePath>../io.openslice.main</relativePath>
 	</parent>
 
@@ -16,7 +16,6 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 		<spring.boot-version>${spring-boot-version}</spring.boot-version>
-		<spring.cloud-consul-version>${spring-cloud-consul-version}</spring.cloud-consul-version>
 	</properties>
 
 	<dependencyManagement>
@@ -26,13 +25,6 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
 				<version>${spring.boot-version}</version>
-				<type>pom</type>
-				<scope>import</scope>
-			</dependency>
-			<dependency>
-				<groupId>org.springframework.cloud</groupId>
-				<artifactId>spring-cloud-consul-dependencies</artifactId>
-				<version>${spring.cloud-consul-version}</version>
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
@@ -72,10 +64,6 @@
 			<artifactId>spring-boot-starter-undertow</artifactId>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-consul-all</artifactId>
-		</dependency>
-		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
@@ -83,11 +71,6 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-bootstrap</artifactId>
-			<version>3.0.2</version>
 		</dependency>
 
 		<!-- activeMQ -->
@@ -146,11 +129,7 @@
 		<dependency>
 			<groupId>org.apache.camel</groupId>
 			<artifactId>camel-stream</artifactId>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.camel.springboot</groupId>
-			<artifactId>camel-zipkin-starter</artifactId>
-		</dependency>				
+		</dependency>	
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
@@ -177,31 +156,16 @@
 		<dependency>
 			<groupId>io.openslice.sol005nbi</groupId>
 			<artifactId>io.openslice.sol005nbi.osm</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.openslice.sol005nbi</groupId>
-			<artifactId>io.openslice.sol005nbi.osm8</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.openslice.sol005nbi</groupId>
-			<artifactId>io.openslice.sol005nbi.osm9</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+			<version>1.2.0-SNAPSHOT</version>
+		</dependency>		
 		<dependency>
 			<groupId>io.openslice.sol005nbi</groupId>
 			<artifactId>io.openslice.sol005nbi.osm10</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>io.openslice.sol005nbi</groupId>
-			<artifactId>io.openslice.sol005nbi.etsi</artifactId>
-			<version>${project.version}</version>
+			<version>1.2.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
-			<artifactId>jackson-datatype-hibernate5</artifactId>
+			<artifactId>jackson-datatype-hibernate5-jakarta</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.datatype</groupId>
@@ -254,8 +218,8 @@
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-compiler-plugin</artifactId>
 					<configuration>
-						<source>11</source>
-						<target>11</target>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
 					</configuration>
 				</plugin>
 			</plugins>
